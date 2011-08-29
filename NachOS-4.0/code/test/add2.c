@@ -7,14 +7,12 @@
 
 #include "syscall.h"
 
-int main()
+int
+main()
 {
-  int result,newres;
+ int result;
   
-  result = Add(42, 23);
-  Exec("./add2");
-  //  Exit(24);
-  newres = Add(10,20);
-  Halt();
+result = Add(49, 23);
+Exit(1);
   /* not reached */
 }

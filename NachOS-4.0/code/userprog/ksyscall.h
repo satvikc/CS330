@@ -14,7 +14,23 @@
 #include "kernel.h"
 
 
+int StartProcess(char path[])
+{
+    AddrSpace *space = new AddrSpace;
+    space->Load(path);
+    space->Execute();
+}
 
+void SysGetArray(int addr, char cArray[], int size)
+{
+    int i = 0;
+    do
+    {
+        kernel->machine->ReadMem(int(addr++), 1, (int *)&cArray[i]);
+        if ( 0 == cArray[i] ) break;
+        i++;
+    }while(true);
+}
 
 void SysHalt()
 {

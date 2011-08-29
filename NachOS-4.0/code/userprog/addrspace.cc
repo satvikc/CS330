@@ -20,7 +20,9 @@
 #include "addrspace.h"
 #include "machine.h"
 #include "noff.h"
+#include "bitmap.h"
 
+Bitmap *bm = new Bitmap(NumPhysPages);
 //----------------------------------------------------------------------
 // SwapHeader
 // 	Do little endian to big endian conversion on the bytes in the 
@@ -64,22 +66,42 @@ SwapHeader (NoffHeader *noffH)
 //	memory.  For now, this is really simple (1:1), since we are
 //	only uniprogramming, and we have a single unsegmented page table
 //----------------------------------------------------------------------
-
 AddrSpace::AddrSpace()
 {
-    pageTable = new TranslationEntry[NumPhysPages];
+    pageTable = NULL;
+}
+
+AddrSpace::AddrSpace(AddrSpace &space)
+{
+    numPages =space.numPages;
+	//failed = false;
+	int num=numPages;
+/*
+	if(num > bm->NumClear())
+	{
+		failed=true;
+		numPages=0;
+		throw(PageLack);
+		return;
+	}
+*/
+    pageTable = new (std::nothrow)TranslationEntry[numPages] ;
+
+#ifndef USE_TLB
+	unsigned int i;
     for (int i = 0; i < NumPhysPages; i++) {
-	pageTable[i].virtualPage = i;	// for now, virt page # = phys page #
-	pageTable[i].physicalPage = i;
-	pageTable[i].valid = TRUE;
-	pageTable[i].use = FALSE;
-	pageTable[i].dirty = FALSE;
-	pageTable[i].readOnly = FALSE;  
+        pageTable[i].virtualPage = i;	// for now, virt page # = phys page #
+        pageTable[i].physicalPage = bm->FindAndSet();
+        pageTable[i].valid = space.pageTable[i].valid;
+        pageTable[i].use = space.pageTable[i].use;
+        pageTable[i].dirty = space.pageTable[i].dirty;
+        pageTable[i].readOnly = space.pageTable[i].readOnly;  
     }
     
-    // zero out the entire address space
-    bzero(kernel->machine->mainMemory, MemorySize);
+#endif
 }
+
+
 
 //----------------------------------------------------------------------
 // AddrSpace::~AddrSpace
@@ -105,9 +127,14 @@ AddrSpace::~AddrSpace()
 bool 
 AddrSpace::Load(char *fileName) 
 {
+    //failed = false;
     OpenFile *executable = kernel->fileSystem->Open(fileName);
     NoffHeader noffH;
     unsigned int size;
+
+#ifndef USE_TLB
+    unsigned int i;
+#endif
 
     if (executable == NULL) {
 	cerr << "Unable to open file " << fileName << "\n";
@@ -141,6 +168,22 @@ AddrSpace::Load(char *fileName)
 						// virtual memory
 
     DEBUG(dbgAddr, "Initializing address space: " << numPages << ", " << size);
+#ifndef USE_TLB
+	// first, set up the translation
+	pageTable = new TranslationEntry[numPages];
+	for (i = 0; i < numPages; i++) {
+		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+		pageTable[i].physicalPage = bm->FindAndSet();
+		pageTable[i].valid = true;
+		pageTable[i].use = false;
+		pageTable[i].dirty = false;
+		pageTable[i].readOnly = false;  // if the code segment was entirely on
+		// a separate page, we could set its
+		// pages to be read-only
+		bzero(&kernel->machine->mainMemory[pageTable[i].physicalPage*PageSize],PageSize);
+	}
+#endif
+
 
 // then, copy in the code and data segments into memory
 // Note: this code assumes that virtual address = physical address
@@ -244,7 +287,10 @@ AddrSpace::InitRegisters()
 //----------------------------------------------------------------------
 
 void AddrSpace::SaveState() 
-{}
+{
+    //pageTable = kernel->machine->pageTable;
+    //numPages = kernel->machine->pageTableSize;
+}
 
 //----------------------------------------------------------------------
 // AddrSpace::RestoreState

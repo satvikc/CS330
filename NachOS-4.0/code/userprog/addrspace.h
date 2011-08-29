@@ -21,6 +21,9 @@
 class AddrSpace {
   public:
     AddrSpace();			// Create an address space.
+    AddrSpace(AddrSpace &space);
+    AddrSpace(OpenFile *executable);
+
     ~AddrSpace();			// De-allocate an address space
 
     bool Load(char *fileName);		// Load a program into addr space from
@@ -31,6 +34,7 @@ class AddrSpace {
 					// assumes the program has already
                                         // been loaded
 
+    void InitRegisters();		// Initialize user-level CPU registers,
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch 
 
@@ -45,7 +49,6 @@ class AddrSpace {
     unsigned int numPages;		// Number of pages in the virtual 
 					// address space
 
-    void InitRegisters();		// Initialize user-level CPU registers,
 					// before jumping to user code
 
 };

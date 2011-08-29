@@ -14,6 +14,5 @@
 
 extern Kernel *kernel;
 extern Debug *debug;
-
 #endif // MAIN_H
 
