@@ -56,7 +56,7 @@
 
 // Size of the thread's private execution stack.
 // WATCH OUT IF THIS ISN'T BIG ENOUGH!!!!!
-const int StackSize = (8 * 1024);	// in words
+const int StackSize = (8 * 4096);	// in words
 
 
 // Thread state

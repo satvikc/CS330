@@ -13,6 +13,7 @@ main()
  int result;
   
 result = Add(49, 23);
-Exit(1);
+Exec("./add4");
+//Exit(1);
   /* not reached */
 }
