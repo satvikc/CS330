@@ -98,6 +98,8 @@ void Forking(int arg)
 
 void StartFork(void *kernelThreadAddress)
 {
+    DEBUG(dbgSys,"Fork returning with 0");
+    kernel->machine->WriteRegister(2,0);
     //kernel->currentThread->space->InitRegisters();
     //kernel->currentThread->space->RestoreState();
     kernel->machine->Run();
@@ -143,6 +145,8 @@ void ExceptionHandler(ExceptionType which)
                 Thread * newthread1;
                 newthread1=new Thread("child");
                 newthread1->space= new AddrSpace(*kernel->currentThread->space);
+                kernel->machine->WriteRegister(2,newthread1->space->id);
+                DEBUG(dbgSys,"Fork returning with "<<newthread1->space->id);
                 DEBUG(dbgSys, "File loaded\n");
                 newthread1->Fork(StartFork,(void *)0);
                 kernel->currentThread->Yield();
@@ -169,6 +173,10 @@ void ExceptionHandler(ExceptionType which)
                 newthread=new Thread("child");
                 newthread->space= new AddrSpace();
                 newthread->space->Load(execfile);
+                //kernel->currentThread->space->Load(execfile);
+                //kernel->currentThread->space->InitRegisters();
+                //kernel->currentThread->space->RestoreState();
+                //kernel->machine->Run();
                 DEBUG(dbgSys, "File loaded\n");
                 newthread->Fork(StartProcessKernel,(void*)0);
                 kernel->currentThread->Yield();
@@ -208,6 +216,61 @@ void ExceptionHandler(ExceptionType which)
                     ASSERTNOTREACHED();
 
                 break;
+            case SC_Exec2:
+                DEBUG(dbgSys, "This is an Exec system call by - "<< kernel->currentThread->getName() << "\n");
+                char execfile3[MAX_FILE_NAME];
+                int memaddress3;
+                memaddress3=kernel->machine->ReadRegister(4);
+                readMemory(memaddress,execfile3);
+                //func. defined at top of the File
+                //Thread * newthread;
+                //newthread=new Thread("child");
+                //newthread->space= new AddrSpace();
+                //newthread->space->Load(execfile);
+                kernel->currentThread->space->Load(execfile3);
+                kernel->currentThread->space->InitRegisters();
+                kernel->currentThread->space->RestoreState();
+                kernel->machine->Run();
+                DEBUG(dbgSys, "File loaded\n");
+                //newthread->Fork(StartProcessKernel,(void*)0);
+                //kernel->currentThread->Yield();
+                //kernel->scheduler->Run(kernel->currentThread,false);    // ReadyToRun
+                //kernel->machine->WriteRegister(PrevPCReg,kernel->machine->ReadRegister(PCReg));
+                //kernel->machine->WriteRegister(PCReg,kernel->machine->ReadRegister(PCReg)+4);
+                //kernel->currentThread->SaveUserState();
+                //kernel->currentThread->space->SaveState();
+                //IntStatus oldLevel;
+                //oldLevel = kernel->interrupt->SetLevel(IntOff);
+                //newthread->space->InitRegisters();
+                //kernel->scheduler->ReadyToRun(newthread);
+                //kernel->scheduler->Run(newthread,false);
+                //newthread->space->RestoreState();
+                //assumes that interrupts
+                    // are disabled!
+                //   (void) kernel->interrupt->SetLevel(oldLevel);
+                //kernel->currentThread->SaveUserState();     // save the user's
+                //CPU registers
+                    //kernel->currentThread->space->SaveState();
+                    //kernel->scheduler->Run(newthread,false);
+                    //kernel->currentThread->space->Execute();
+                    DEBUG(dbgSys, "Did i reach here ??");
+                    /* set previous programm counter (debugging only)*/
+                    //kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                    /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                    //kernel->machine->WriteRegister(PCReg,0);
+                    /* set next programm counter for brach execution */
+                    //newthread->space->RestoreState();
+                    //kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                    kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                    /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                    kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                    /* svet next programm counter for brach execution */
+                    kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                    return;
+                    ASSERTNOTREACHED();
+
+                break;
+
 
             case SC_Halt:
                 DEBUG(dbgSys, "Shutdown, initiated by user program.\n");

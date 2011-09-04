@@ -21,6 +21,7 @@
 #define SC_Halt		0
 #define SC_Exit		1
 #define SC_Exec		2
+#define SC_Exec2	52
 #define SC_Join		3
 #define SC_Create	4
 #define SC_Remove       5

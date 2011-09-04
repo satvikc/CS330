@@ -6,15 +6,17 @@
  */
 
 #include "syscall.h"
-
 int main()
 {
-  int result,newres;
+  int result,newres,pid;
   
-  result = Add(42, 23);
-  Fork();
+  result = Add(42, 20);
+  pid=Fork();
   //  Exit(24);
-  newres = Add(10,20);
-  Exit(12);
+  if (pid==0)
+    Exec2("./add4");
+  else
+    newres = Add(100,200);
+//  Halt();
   /* not reached */
 }
