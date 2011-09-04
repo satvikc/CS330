@@ -60,42 +60,6 @@ void Add_Syscall()
     kernel->machine->WriteRegister(2, (int)result);
 }
 
-void Forking(int arg)
-{
-	Thread* old, *me;
-	int* phys;
-	char *buff;
-	//ofstream fout;
-	old = (Thread*) arg;
-	me = kernel->currentThread;
-	phys = new int;
-
-	//Set the PC registers
-	for(unsigned int i=0; i < old->space->numPages*PageSize;i++)
-	{
-		old->space->RestoreState();
-		kernel->machine->Translate(i,phys,1,false);
-		buff = &kernel->machine->mainMemory[*phys];
-		kernel->currentThread->space->RestoreState();
-		kernel->machine->Translate(i,phys,1,false);
-		kernel->machine->mainMemory[*phys]=*buff;
-	}
-
-	//kernel->currentThread->copyFiles(old);
-
-	kernel->machine->WriteRegister(2,0);
-    /* set previous programm counter (debugging only)*/
-    kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
-    /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
-    kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
-    /* set next programm counter for brach execution */
-    kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
-
-
-    kernel->machine->Run();
-
-}
-
 void StartFork(void *kernelThreadAddress)
 {
     DEBUG(dbgSys,"Fork returning with 0");
@@ -178,6 +142,9 @@ void ExceptionHandler(ExceptionType which)
                 //kernel->currentThread->space->RestoreState();
                 //kernel->machine->Run();
                 DEBUG(dbgSys, "File loaded\n");
+                DEBUG(dbgSys, "The status of current thread is ");
+                kernel->currentThread->getStatus();
+                DEBUG(dbgSys, "Ready list info  \n");
                 newthread->Fork(StartProcessKernel,(void*)0);
                 kernel->currentThread->Yield();
                 //kernel->scheduler->Run(kernel->currentThread,false);    // ReadyToRun
