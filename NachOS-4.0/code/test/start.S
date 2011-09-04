@@ -74,8 +74,8 @@ Exec:
 	j	$31
 	.end Exec
 
-	.globl Exec
-	.ent	Exec
+	.globl Exec2
+	.ent	Exec2
 Exec2:
 	addiu $2,$0,SC_Exec2
 	syscall
@@ -83,6 +83,7 @@ Exec2:
 	.end Exec2
 
 	.globl ExecV
+    .ent ExecV
 ExecV:
 	addiu $2,$0,SC_ExecV
 	syscall
