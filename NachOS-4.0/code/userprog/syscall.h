@@ -34,7 +34,7 @@
 #define SC_ExecV	13
 #define SC_ThreadExit   14
 #define SC_ThreadJoin   15
-
+#define SC_Fork     16
 #define SC_Add		42
 
 #ifndef IN_ASM
@@ -152,7 +152,7 @@ int Close(OpenFileId id);
  * Could define other operations, such as LockAcquire, LockRelease, etc.
  */
 
-/* Fork a thread to run a procedure ("func") in the *same* address space 
+/* fasklklasfklork a thread to run a procedure ("func") in the *same* address space 
  * as the current thread.
  * Return a positive ThreadId on success, negative error code on failure
  */

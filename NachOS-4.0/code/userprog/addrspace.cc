@@ -85,6 +85,39 @@ AddrSpace::AddrSpace()
     // zero out the entire address space
 
 }
+AddrSpace::AddrSpace(AddrSpace &space)
+{
+	numPages =space.numPages;
+	//failed = false;
+	int num=numPages;
+
+	//if(num > bm->NumClear())
+	//{
+	//	failed=true;
+	//	numPages=0;
+	//	throw(PageLack);
+	//	return;
+	//}
+	pageTable = new TranslationEntry[numPages] ;
+
+#ifndef USE_TLB
+	unsigned int i;
+	for (i = 0; i < numPages; i++) {
+		pageTable[i].virtualPage = i;
+		pageTable[i].physicalPage = n.FindAndSet();
+        if (i==0){
+            this->id = pageTable[0].physicalPage;
+        }
+		pageTable[i].valid = space.pageTable[i].valid;
+		pageTable[i].use = space.pageTable[i].use;
+		pageTable[i].dirty = space.pageTable[i].dirty;
+		pageTable[i].readOnly = space.pageTable[i].readOnly;
+
+	}
+
+#endif
+}
+
 
 //----------------------------------------------------------------------
 // AddrSpace::~AddrSpace
@@ -93,6 +126,12 @@ AddrSpace::AddrSpace()
 
 AddrSpace::~AddrSpace()
 {
+    int k;
+	for (unsigned int i = 0; i < numPages; i++)
+    {
+		k=pageTable[i].physicalPage;
+	    n.Clear(k);
+    }
    delete pageTable;
 }
 
@@ -152,6 +191,9 @@ AddrSpace::Load(char *fileName)
 	pageTable[i].virtualPage = i;	// for now, virt page # = phys page #
 	int k=n.FindAndSet();
 	pageTable[i].physicalPage = k;
+    if (i==0){
+        this->id = pageTable[0].physicalPage;
+    }
     DEBUG(dbgAddr, "physical address "<< k);
 	pageTable[i].valid = TRUE;
 	pageTable[i].use = FALSE;

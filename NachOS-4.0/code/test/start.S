@@ -146,6 +146,15 @@ Seek:
 	j	$31
 	.end Seek
 
+    .globl Fork
+	.ent	Fork
+Fork:
+	addiu $2,$0,SC_Fork
+	syscall
+	j	$31
+	.end Fork
+
+
         .globl ThreadFork
         .ent    ThreadFork
 ThreadFork:

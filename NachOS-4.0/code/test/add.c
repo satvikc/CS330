@@ -17,5 +17,6 @@ int main()
   //  Exit(24);
   newres = Add(10,20);
   Halt();
+  //Exit(0);
   /* not reached */
 }

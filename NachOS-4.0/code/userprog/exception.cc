@@ -59,6 +59,50 @@ void Add_Syscall()
     DEBUG(dbgSys, "Add returning with " << result << "\n");
     kernel->machine->WriteRegister(2, (int)result);
 }
+
+void Forking(int arg)
+{
+	Thread* old, *me;
+	int* phys;
+	char *buff;
+	//ofstream fout;
+	old = (Thread*) arg;
+	me = kernel->currentThread;
+	phys = new int;
+
+	//Set the PC registers
+	for(unsigned int i=0; i < old->space->numPages*PageSize;i++)
+	{
+		old->space->RestoreState();
+		kernel->machine->Translate(i,phys,1,false);
+		buff = &kernel->machine->mainMemory[*phys];
+		kernel->currentThread->space->RestoreState();
+		kernel->machine->Translate(i,phys,1,false);
+		kernel->machine->mainMemory[*phys]=*buff;
+	}
+
+	//kernel->currentThread->copyFiles(old);
+
+	kernel->machine->WriteRegister(2,0);
+    /* set previous programm counter (debugging only)*/
+    kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+    /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+    kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+    /* set next programm counter for brach execution */
+    kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+
+
+    kernel->machine->Run();
+
+}
+
+void StartFork(void *kernelThreadAddress)
+{
+    //kernel->currentThread->space->InitRegisters();
+    //kernel->currentThread->space->RestoreState();
+    kernel->machine->Run();
+}
+
 void StartProcessKernel(void *kernelThreadAddress)
 {
     kernel->currentThread->space->InitRegisters();
@@ -87,6 +131,33 @@ void ExceptionHandler(ExceptionType which)
     {
         switch(type)
         {
+            case SC_Fork:
+                kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                /* svet next programm counter for brach execution */
+                kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+
+                DEBUG(dbgSys, "This is a Fork system call by - "<< kernel->currentThread->getName() << kernel->currentThread->space->id << "\n");
+
+                Thread * newthread1;
+                newthread1=new Thread("child");
+                newthread1->space= new AddrSpace(*kernel->currentThread->space);
+                DEBUG(dbgSys, "File loaded\n");
+                newthread1->Fork(StartFork,(void *)0);
+                kernel->currentThread->Yield();
+
+//                kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+//                kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                /* svet next programm counter for brach execution */
+//                kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                return;
+                ASSERTNOTREACHED();
+
+                break;
+
+
             case SC_Exec:
                 DEBUG(dbgSys, "This is an Exec system call by - "<< kernel->currentThread->getName() << "\n");
                 char execfile[MAX_FILE_NAME];
@@ -165,22 +236,30 @@ void ExceptionHandler(ExceptionType which)
                break;
             case SC_Exit:
 //               int exitcode;
-  //             exitcode = kernel->machine->ReadRegister(4);
-               kernel->currentThread->Finish();
+ //            exitcode = kernel->machine->ReadRegister(4);
+               //kernel->currentThread->Yield();
  //              DEBUG(dbgSys, "Calling exit " << exitcode);
 //                IntStatus oldLevel2;
 //                oldLevel2 = kernel->interrupt->SetLevel(IntOff);
-               //kernel->scheduler->toBeDestroyed = kernel->currentThread;
+//              kernel->scheduler->toBeDestroyed = kernel->currentThread;
 //               Thread *nextthread;
-               // DEBUG(dbgSys, "Finding next thread to run . ");
+//                DEBUG(dbgSys, "Finding next thread to run . ");
 //               nextthread = kernel->scheduler->FindNextToRun();
 //              (void) kernel->interrupt->SetLevel(oldLevel2);
-//               if (!nextthread) {
+//               if (!kernel->scheduler->FindNextToRun()) {
 //                   DEBUG(dbgSys, "No more threads to run..");
 //                    SysHalt();
 //               }
+
+               DEBUG(dbgSys, "Current thread in SC_Exit is " << kernel->currentThread->getName() << "\n");
 //               oldLevel2 = kernel->interrupt->SetLevel(IntOff);
-            //    DEBUG(dbgSys, "Running next thread . ");
+//                DEBUG(dbgSys, "Running next thread . ");
+                if (kernel->currentThread->space->id ==0)
+                    SysHalt();
+                else
+                    kernel->currentThread->Finish();
+
+
                 kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
                 /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
                 kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
@@ -188,8 +267,7 @@ void ExceptionHandler(ExceptionType which)
                 kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
                 //kernel->currentThread->Finish();
                 //kernel->machine->Run();
-
-                    return;
+                 return;
             //    ASSERTNOTREACHED();
 //                kernel->scheduler->toBeDestroyed=kernel->currentThread;
 //               kernel->scheduler->Run(nextthread,false);

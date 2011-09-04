@@ -43,10 +43,11 @@ class AddrSpace {
     // is 0 for Read, 1 for Write.
     ExceptionType Translate(unsigned int vaddr, unsigned int *paddr, int mode);
 
-  private:
     TranslationEntry *pageTable;	// Assume linear page table translation
-					// for now!
     unsigned int numPages;		// Number of pages in the virtual 
+    unsigned int id;
+  private:
+					// for now!
 					// address space
 
 					// before jumping to user code

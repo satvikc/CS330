@@ -15,6 +15,6 @@ int main()
   Fork();
   //  Exit(24);
   newres = Add(10,20);
-//  Halt();
+  Exit(12);
   /* not reached */
 }
