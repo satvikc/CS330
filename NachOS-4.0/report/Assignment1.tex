@@ -1,0 +1,239 @@
+\documentclass{article}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifxetex
+  \usepackage{fontspec,xltxtra,xunicode}
+  \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+\else
+  \ifluatex
+    \usepackage{fontspec}
+    \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+  \else
+    \usepackage[utf8]{inputenc}
+  \fi
+\fi
+\ifxetex
+  \usepackage[setpagesize=false, % page size defined by xetex
+              unicode=false, % unicode breaks when used with xetex
+              xetex]{hyperref}
+\else
+  \usepackage[unicode=true]{hyperref}
+\fi
+\hypersetup{breaklinks=true, pdfborder={0 0 0}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\setcounter{secnumdepth}{0}
+
+
+\begin{document}
+
+\section{Assignment 1}
+
+\subsection{Satvik Chauhan (Y9521) , Pankaj More (Y9402)}
+
+\begin{itemize}
+\item
+  Changes in Nachos
+
+  \begin{itemize}
+  \item
+    Changes in Address Space
+
+    \begin{itemize}
+    \item
+      Nachos was a single process system , so it used the whole of its
+      memory for the address space of a single process .
+    \item
+      Every address space consist of pagetable which is made up of pages
+      .
+    \item
+      The first page of the address space starts with virtual address 0
+      ,but it has some mapping to the physical address on the main
+      memory.
+    \item
+      In the original nachos both virtual address and the physical
+      address were same ( equals 0) as it had to deal with only one
+      process .
+    \item
+      The class Bitmap from Bitmap.h was used to create a bitmap for the
+      pages in the physical memory and to find the empty physical
+      address while creating a new address space.
+    \item
+      Initially after creating the new address space , the whole
+      physical memory was wiped out to 0 . So we had to change it so
+      that it only assigns 0 to its own address space bits.
+    \item
+      We had to translate the virtual address to the corresponding
+      physical address while copying any file to the address space.
+    \item
+      To handle the specific need of the Fork system call in which we
+      had to copy the current address space to a newly created address
+      space we used \emph{constructor overloading} to create a new
+      address space constructor deep copies the address space from the
+      address space pointer passed to it.
+    \item
+      We had to move the pagetable creation step from the original
+      constructor to the Load function . So it creates new address space
+      when Load function is called and assigns required amount of pages
+      for it .
+    \item
+      The Address space destructor has to take care to free up the
+      memory and mark the corresponding pages in the pagetable bitmap as
+      dirty so that the space can be reused.
+    \item
+      We also created a class element called id which assigns a unique
+      id to each process based on the starting page of its address
+      space.
+    \end{itemize}
+  \item
+    System calls
+
+    \begin{itemize}
+    \item
+      \emph{Fork}
+
+      \begin{itemize}
+      \item
+        Fork creates a new kernel level thread
+      \item
+        Copies the current address space to the address space of the new
+        thread .
+      \item
+        Also keep the registers to be used by the child process .
+      \item
+        Puts child on the ready queue and starts the child process.
+      \item
+        It returns 0 in the child process and the \emph{PID} of the
+        child in the parent process.
+      \end{itemize}
+    \item
+      There are two implementations of the exec system call described
+      below
+
+      \begin{itemize}
+      \item
+        \emph{Exec2}
+
+        \begin{itemize}
+        \item
+          To be used with Fork system call only .
+        \item
+          It replaces the current address space with the program to be
+          loaded .
+        \item
+          Resets all the registers and thus moves the program counter to
+          the beginning .
+        \item
+          The control returns to the parent process after the child
+          process finishes.
+        \end{itemize}
+      \item
+        \emph{Exec}
+
+        \begin{itemize}
+        \item
+          An amalgamation of the above Exec2 and Fork calls .
+        \item
+          Instead of calling Fork and then Exec2 , We can directly call
+          Exec with the executable of the new process and it directly
+          loads and starts the new process.
+        \item
+          The control returns to the parent process after the child
+          process finishes .
+        \end{itemize}
+      \end{itemize}
+    \item
+      \emph{Exit}
+
+      \begin{itemize}
+      \item
+        Exit system call is called automatically whenever a program
+        exits .
+      \item
+        Handles the cleanup of the system .
+      \item
+        It stops the thread if it is not the main thread .
+      \item
+        Since the last thread can not stop itself , so we can not just
+        finish the last \emph{main} thread .
+      \item
+        So if the pid of the thread calling main is 0 (0 means it is the
+        main thread) it calls nachos Halt instead of finishing the
+        thread.
+      \end{itemize}
+    \item
+      SysStats
+      \begin{itemize}
+      \item
+        SysStats internally calls SysStatsCall() function defined in
+        exception.cc .
+      \item
+        The structures ProcInfo and SysInfo as given in the question
+        have been defined in machine/stats.h with a few modifications
+        (for optimisation and convienince) which are only internal to
+        the code. The external api for calling it is consistent with the
+        question.
+      \item
+        A global mysysinfo structure is created as a member of the
+        kernel object and it can be accessed as
+        kernel-\textgreater{}mysysinfo .
+      \item
+        Since the tick variables are already defined and are working in
+        stats.h , our corresponding ticks in SysInfo structure are just
+        pointers to those pre-defined ticks. When the kernel is
+        initialised , and kernel-\textgreater{}stats is created , we
+        setup the corresponding pointer references in
+        Kernel::Initialize() .
+      \item
+        We create the array of ProcInfos during Thread creation. When
+        Thread::Thread() constructor is called, we simply create an new
+        ProcInfo structure and add it to the proc array in mysysinfo and
+        setup the corresponding pointer references for thread name and
+        thread status.
+      \item
+        kernel-\textgreater{}mysysinfo-\textgreater{}proc refers to an
+        array of ProcInfo structures which store the status of each
+        procces name and status.
+      \item
+        Our Nachos user processes are nothing but Thread objects defined
+        in /threads/threads.h .
+      \item
+        When a process is just created , its status is JUST\_CREATED.
+      \item
+        When the Nachos System is running the process , it sets its
+        status to RUNNING.
+      \item
+        When the process is Yield , its status becomes READY.
+      \item
+        When the process is finished/killed , it becomes BLOCKED.
+      \item
+        When SysStats system call is made , it prints all the processes
+        (both running and killed) along with their status. Moreover , it
+        also prints out the relevant ticks details on the console.
+      \end{itemize}
+    \end{itemize}
+  \item
+    Assignment1.c
+    \begin{itemize}
+    \item
+      Assignment1.c uses Exec2 system call which comfirms to the spec
+      given in the question.
+    \item
+      It basically calls fork and execute on each programs in the progs
+      array.
+    \end{itemize}
+  \item
+    otherExec.c
+    \begin{itemize}
+    \item
+      It uses the Exec system call. It is different from the one asked
+      in question.
+    \item
+      It does a thread fork and then loads the program simultaneously on
+      the same Exec system call.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\end{document}
