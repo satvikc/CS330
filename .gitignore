@@ -1,0 +1,7 @@
+*.flat
+swapfile.*
+nachos
+coff2noff
+coff2flat
+*.o
+*~
