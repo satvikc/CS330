@@ -37,6 +37,7 @@
 #define SC_ThreadJoin   15
 #define SC_Fork     16
 #define SC_Add		42
+#define SC_SysStats 99
 
 #ifndef IN_ASM
 

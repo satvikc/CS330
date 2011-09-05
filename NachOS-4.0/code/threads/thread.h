@@ -80,7 +80,6 @@ class Thread {
     // THEY MUST be in this position for SWITCH to work.
     int *stackTop;			 // the current stack pointer
     void *machineState[MachineStateSize];  // all registers except for stackTop
-
   public:
     Thread(char* debugName);		// initialize a Thread 
     ~Thread(); 				// deallocate a Thread
@@ -99,8 +98,9 @@ class Thread {
     void Begin();		// Startup code for the thread	
     void Finish();  		// The thread is done executing
     
+    ThreadStatus status;	// ready, running or blocked
     void CheckOverflow();   	// Check if thread stack has overflowed
-    void setStatus(ThreadStatus st) { status = st; }
+    void setStatus(ThreadStatus st);
     void getStatus() { cout<< status; }
     char* getName() { return (name); }
     void Print() { cout << name; }
@@ -112,8 +112,8 @@ class Thread {
     int *stack; 	 	// Bottom of the stack 
 				// NULL if this is the main thread
 				// (If NULL, don't deallocate stack)
-    ThreadStatus status;	// ready, running or blocked
     char* name;
+    int id;
 
     void StackAllocate(VoidFunctionPtr func, void *arg);
     				// Allocate a stack for thread.

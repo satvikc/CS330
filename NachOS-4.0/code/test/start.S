@@ -162,6 +162,14 @@ Fork:
 	j	$31
 	.end Fork
 
+    .globl SysStats
+	.ent	SysStats
+SysStats:
+	addiu $2,$0,SC_SysStats
+	syscall
+	j	$31
+	.end SysStats
+
 
         .globl ThreadFork
         .ent    ThreadFork

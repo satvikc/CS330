@@ -48,6 +48,7 @@ class Kernel {
     Scheduler *scheduler;	// the ready list
     Interrupt *interrupt;	// interrupt status
     Statistics *stats;		// performance metrics
+    SysInfo *mysysinfo;
     Alarm *alarm;		// the software alarm clock    
     Machine *machine;           // the simulated CPU
     SynchConsoleInput *synchConsoleIn;
@@ -56,6 +57,7 @@ class Kernel {
     FileSystem *fileSystem;     
     PostOfficeInput *postOfficeIn;
     PostOfficeOutput *postOfficeOut;
+    
 
     int hostName;               // machine identifier
 

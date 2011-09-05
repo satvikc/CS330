@@ -12,7 +12,7 @@
 #define STATS_H
 
 #include "copyright.h"
-
+#include "thread.h"
 // The following class defines the statistics that are to be kept
 // about Nachos behavior -- how much time (ticks) elapsed, how
 // many user instructions executed, etc.
@@ -56,5 +56,22 @@ const int SeekTime =	 500;  	// time disk takes to seek past one track
 const int ConsoleTime =	 100;	// time to read or write one character
 const int NetworkTime =	 100;  	// time to send or receive one packet
 const int TimerTicks = 	 100;  	// (average) time between timer interrupts
+
+//enum ProcStatus {JUST_CREATED, RUNNING, READY, BLOCKED}; 
+typedef struct { 
+    char* name;               // name of the program 
+    ThreadStatus* status;        // current status of the process 
+} ProcInfo;
+
+typedef struct { 
+    int *totalticks;             // Total time running Nachos 
+    int *idleticks;              // Time spent idle (no threads to run) 
+    int *systemticks;            // Time spent executing system code 
+    int *userticks;              // Time spent executing user code 
+    int numprocs;               // Total number of processes in processArray 
+    ProcInfo* proc[10];             // Array of "numprocs" number of "ProcInfo" structures providing information about each process in the system 
+} SysInfo;
+
+//SysInfo mysysinfo;
 
 #endif // STATS_H

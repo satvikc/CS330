@@ -57,7 +57,32 @@ void Add_Syscall()
     int result;
     result = SysAdd(/* int op1 */(int)kernel->machine->ReadRegister(4),(int)kernel->machine->ReadRegister(5));
     DEBUG(dbgSys, "Add returning with " << result << "\n");
+    kernel->stats->Print();
     kernel->machine->WriteRegister(2, (int)result);
+}
+
+char* setStatus(int x)
+{
+    if (x == 0) return "JUST_CREATED";
+    else if (x == 1) return "RUNNING";
+    else if (x == 2 ) return "READY";
+    else if (x == 3 ) return "BLOCKED";
+    else return "UNKNOWN STATUS";
+}
+
+void SysStatsCall()
+{
+    kernel->scheduler->Print();
+    cout<< "\n";
+    cout << "NumProcs : " << kernel->mysysinfo->numprocs << "\n";
+    for (int i = 0; i < kernel->mysysinfo->numprocs ; i++)
+        cout<< kernel->mysysinfo->proc[i]->name << ":" << setStatus(*(kernel->mysysinfo->proc[i]->status)) << "\n";
+    cout << "Total Ticks : " << *(kernel->mysysinfo->totalticks) <<"\n";
+    cout << "Idle Ticks : " << *(kernel->mysysinfo->idleticks) << "\n" ;
+    cout << "System Ticks : " << *(kernel->mysysinfo->systemticks) << "\n";
+    cout << "User Ticks : " << *(kernel->mysysinfo->userticks) << "\n";
+    cout << "\n";
+
 }
 
 void StartFork(void *kernelThreadAddress)
@@ -108,6 +133,12 @@ void ExceptionHandler(ExceptionType which)
 
                 Thread * newthread1;
                 newthread1=new Thread("child");
+                int index;
+                index = kernel->mysysinfo->numprocs;
+                kernel->mysysinfo->proc[index] = new ProcInfo();
+                kernel->mysysinfo->proc[index]->name = newthread1->getName();
+                kernel->mysysinfo->proc[index]->status = &newthread1->status;
+                kernel->mysysinfo->numprocs += 1;
                 newthread1->space= new AddrSpace(*kernel->currentThread->space);
                 kernel->machine->WriteRegister(2,newthread1->space->id);
                 DEBUG(dbgSys,"Fork returning with "<<newthread1->space->id);
@@ -142,9 +173,8 @@ void ExceptionHandler(ExceptionType which)
                 //kernel->currentThread->space->RestoreState();
                 //kernel->machine->Run();
                 DEBUG(dbgSys, "File loaded\n");
-                DEBUG(dbgSys, "The status of current thread is ");
-                kernel->currentThread->getStatus();
-                DEBUG(dbgSys, "Ready list info  \n");
+                kernel->stats->Print();
+                DEBUG(dbgSys, "Stats printed\n");
                 newthread->Fork(StartProcessKernel,(void*)0);
                 kernel->currentThread->Yield();
                 //kernel->scheduler->Run(kernel->currentThread,false);    // ReadyToRun
@@ -188,7 +218,7 @@ void ExceptionHandler(ExceptionType which)
                 char execfile3[MAX_FILE_NAME];
                 int memaddress3;
                 memaddress3=kernel->machine->ReadRegister(4);
-                readMemory(memaddress,execfile3);
+                readMemory(memaddress3,execfile3);
                 //func. defined at top of the File
                 //Thread * newthread;
                 //newthread=new Thread("child");
@@ -264,6 +294,19 @@ void ExceptionHandler(ExceptionType which)
                 return;
                 ASSERTNOTREACHED();
                break;
+            case SC_SysStats:
+	            DEBUG(dbgSys, "SysStatsCall "); 
+                SysStatsCall();
+                  /* set previous programm counter (debugging only)*/
+                kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                /* set next programm counter for brach execution */
+                kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                return;
+                ASSERTNOTREACHED();
+               break;
+
             case SC_Exit:
 //               int exitcode;
  //            exitcode = kernel->machine->ReadRegister(4);

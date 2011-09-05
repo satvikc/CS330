@@ -11,8 +11,8 @@ int
 main()
 {
  int result;
-  
 result = Add(4, 4);
 //Exit(1);
+SysStats();
   /* not reached */
 }

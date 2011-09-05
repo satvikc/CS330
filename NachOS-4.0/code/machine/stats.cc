@@ -43,3 +43,9 @@ Statistics::Print()
     cout << "Network I/O: packets received " << numPacketsRecvd;
 		cout << ", sent " << numPacketsSent << "\n";
 }
+
+//SysInfo mysysinfo(kernel->stats->totalTicks,null,null,null);
+//mysysinfo.totalticks = kernel->stats->totalTicks;
+//mysysinfo.idleTicks = kernel->stats->idleTicks;
+//mysysinfo.systemticks = kernel->stats->systemTicks;
+//mysysinfo.userticks = kernel->stats->userTicks;

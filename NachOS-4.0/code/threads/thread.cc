@@ -21,6 +21,7 @@
 #include "switch.h"
 #include "synch.h"
 #include "sysdep.h"
+#include "kernel.h"
 
 // this is put at the top of the execution stack, for detecting stack overflows
 const int STACK_FENCEPOST = 0xdedbeef;
@@ -87,7 +88,15 @@ Thread::~Thread()
 //	"func" is the procedure to run concurrently.
 //	"arg" is a single argument to be passed to the procedure.
 //----------------------------------------------------------------------
-
+void Thread::setStatus(ThreadStatus st)
+{
+    status = st;
+    //if (name == "main") 
+    //    return ;
+    //else {
+    //    kernel->mysysinfo->numprocs += 1;
+    //}
+}
 void 
 Thread::Fork(VoidFunctionPtr func, void *arg)
 {

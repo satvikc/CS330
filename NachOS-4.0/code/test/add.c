@@ -10,7 +10,7 @@
 int main()
 {
   int result,newres;
-  
+  SysStats();
   result = Add(42, 23);
   Exec("./add2");
   Exec("./add3");
