@@ -14,12 +14,14 @@ int main()
   result = Add(42, 20);
   pid=Fork();
   //  Exit(24);
-  SysStats();
-  if (pid==0)
-    Exec2("./add4");
-  else
-    newres = Add(100,200);
+//  SysStats();
+//  if (pid==0)
+//    Exec2("./add4");
+//  else
+//    newres = Add(100,200);
+  Add(1,1);
   p = Fork();
+  Add(0,0);
 
   SysStats();
 //  Halt();

@@ -101,10 +101,13 @@ AddrSpace::AddrSpace(AddrSpace &space)
 	pageTable = new TranslationEntry[numPages] ;
 
 #ifndef USE_TLB
-	unsigned int i;
+	unsigned int i,j;
+    int c;
+    int x;
 	for (i = 0; i < numPages; i++) {
 		pageTable[i].virtualPage = i;
-		pageTable[i].physicalPage = n.FindAndSet();
+        x = n.FindAndSet();
+		pageTable[i].physicalPage = x;
         if (i==0){
             this->id = pageTable[0].physicalPage;
         }
@@ -112,6 +115,12 @@ AddrSpace::AddrSpace(AddrSpace &space)
 		pageTable[i].use = space.pageTable[i].use;
 		pageTable[i].dirty = space.pageTable[i].dirty;
 		pageTable[i].readOnly = space.pageTable[i].readOnly;
+        for (j = 0; j < PageSize ; j++)
+        {
+            kernel->machine->ReadMem(j+i*PageSize,1,&c);
+            kernel->machine->mainMemory[x*PageSize+j] = (char)c;
+
+        }
 
 	}
 

@@ -11,7 +11,6 @@ int
 main()
 {
  int result;
-  
 result = Add(3, 3);
 //Exit(1);
   /* not reached */

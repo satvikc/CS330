@@ -10,10 +10,9 @@
 int
 main()
 {
- int result;
-  
-result = Add(49, 23);
-Exec("./add4");
+  int result;
+  result = Add(2,2);
+//Exec("./add3");
 //Exit(1);
   /* not reached */
 }

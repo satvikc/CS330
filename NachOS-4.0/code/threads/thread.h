@@ -105,15 +105,13 @@ class Thread {
     char* getName() { return (name); }
     void Print() { cout << name; }
     void SelfTest();		// test whether thread impl is working
-
+    char* name;
   private:
     // some of the private data for this class is listed above
     
     int *stack; 	 	// Bottom of the stack 
 				// NULL if this is the main thread
 				// (If NULL, don't deallocate stack)
-    char* name;
-    int id;
 
     void StackAllocate(VoidFunctionPtr func, void *arg);
     				// Allocate a stack for thread.

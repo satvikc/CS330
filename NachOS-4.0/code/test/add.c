@@ -9,14 +9,15 @@
 
 int main()
 {
-  int result,newres;
+  int result,newres,pid;
   SysStats();
-  result = Add(42, 23);
-  Exec("./add2");
-  Exec("./add3");
+  pid = Fork();
+  if (pid==0)
+  Exec2("./add2");
   //  Exit(24);
   newres = Add(10,20);
-  Halt();
+//  SysStats();
+//  Halt();
   //Exit(0);
   /* not reached */
 }

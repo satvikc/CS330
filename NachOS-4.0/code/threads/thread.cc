@@ -46,6 +46,13 @@ Thread::Thread(char* threadName)
 					// of machine registers
     }
     space = NULL;
+    int index;
+    index = kernel->mysysinfo->numprocs;
+    kernel->mysysinfo->proc[index] = new ProcInfo();
+    kernel->mysysinfo->proc[index]->name = this->name;
+    kernel->mysysinfo->proc[index]->status = &this->status;
+    kernel->mysysinfo->numprocs += 1;
+
 }
 
 //----------------------------------------------------------------------
@@ -109,6 +116,7 @@ Thread::Fork(VoidFunctionPtr func, void *arg)
     StackAllocate(func, arg);
 
     oldLevel = interrupt->SetLevel(IntOff);
+    this->SaveUserState();
     scheduler->ReadyToRun(this);	// ReadyToRun assumes that interrupts 
 					// are disabled!
     (void) interrupt->SetLevel(oldLevel);

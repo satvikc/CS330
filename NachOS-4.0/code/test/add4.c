@@ -12,7 +12,8 @@ main()
 {
  int result;
 result = Add(4, 4);
+//Exec("./add2");
 //Exit(1);
-SysStats();
+//SysStats();
   /* not reached */
 }
