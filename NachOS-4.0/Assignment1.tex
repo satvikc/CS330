@@ -1,0 +1,158 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{multicol}
+\usepackage{epsfig}
+\textwidth 6in
+\addtolength{\oddsidemargin}{-0.5in}
+\textheight 9in
+\addtolength{\topmargin}{-0.5in}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5cm}
+\setlength{\columnsep}{5cm}
+\topskip 0.0in
+%\pagestyle{empty}
+\thispagestyle{empty}
+\title{Assignment1}
+\author{}
+%\date{August 04, 2004}
+\date{}
+
+
+\begin{document}
+\maketitle
+\begin{itemize}
+\item
+  Changes in Nachos
+
+  \begin{itemize}
+  \item
+    Changes in Address Space
+
+    \begin{itemize}
+    \item
+      Nachos was a single process system , so it used the whole of its
+      memory for the address space of a single process .
+    \item
+      Every address space consist of pagetable which is made up of pages
+      .
+    \item
+      The first page of the address space starts with virtual address 0
+      ,but it has some mapping to the physical address on the main
+      memory.
+    \item
+      In the original nachos both virtual address and the physical
+      address were same ( equals 0) as it had to deal with only one
+      process .
+    \item
+      The class Bitmap from Bitmap.h was used to create a bitmap for the
+      pages in the physical memory and to find the empty physical
+      address while creating a new address space.
+    \item
+      Initially after creating the new address space , the whole
+      physical memory was wiped out to 0 . So we had to change it so
+      that it only assigns 0 to its own address space bits.
+    \item
+      We had to translate the virtual address to the corresponding
+      physical address while copying any file to the address space.
+    \item
+      To handle the specific need of the Fork system call in which we
+      had to copy the current address space to a newly created address
+      space we used \textbf{constructor overloading} to create a new
+      address space constructor deep copies the address space from the
+      address space pointer passed to it.
+    \item
+      We had to move the pagetable creation step from the original
+      constructor to the Load function . So it creates new address space
+      when Load function is called and assigns required amount of pages
+      for it .
+    \item
+      The Address space destructor has to take care to free up the
+      memory and mark the corresponding pages in the pagetable bitmap as
+      dirty so that the space can be reused.
+    \item
+      We also created a class element called id which assigns a unique
+      id to each process based on the starting page of its address
+      space.
+    \end{itemize}
+  \item
+    System calls
+
+    \begin{itemize}
+    \item
+      \textbf{Fork}
+
+      \begin{itemize}
+      \item
+        Fork creates a new kernel level thread
+      \item
+        Copies the current address space to the address space of the new
+        thread .
+      \item
+        Also keep the registers to be used by the child process .
+      \item
+        Puts child on the ready queue and starts the child process.
+      \item
+        It returns 0 in the child process and the \emph{PID} of the
+        child in the parent process.
+      \end{itemize}
+    \item
+      There are two implementations of the exec system call described
+      below
+
+      \begin{itemize}
+      \item
+        \textbf{Exec2}
+
+        \begin{itemize}
+        \item
+          To be used with Fork system call only .
+        \item
+          It replaces the current address space with the program to be
+          loaded .
+        \item
+          Resets all the registers and thus moves the program counter to
+          the beginning .
+        \item
+          The control returns to the parent process after the child
+          process finishes.
+        \end{itemize}
+      \item
+        \textbf{Exec}
+
+        \begin{itemize}
+        \item
+          An amalgamation of the above Exec2 and Fork calls .
+        \item
+          Instead of calling Fork and then Exec2 , We can directly call
+          Exec with the executable of the new process and it directly
+          loads and starts the new process.
+        \item
+          The control returns to the parent process after the child
+          process finishes .
+        \end{itemize}
+      \end{itemize}
+    \item
+      \textbf{Exit}
+
+      \begin{itemize}
+      \item
+        Exit system call is called automatically whenever a program
+        exits .
+      \item
+        Handles the cleanup of the system .
+      \item
+        It stops the thread if it is not the main thread .
+      \item
+        Since the last thread can not stop itself , so we can not just
+        finish the last \emph{main} thread .
+      \item
+        So if the pid of the thread calling main is 0 (0 means it is the
+        main thread) it calls nachos Halt instead of finishing the
+        thread.
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\end{document}
