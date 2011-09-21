@@ -70,8 +70,8 @@ proc (RunScheduler) = do
                             let readyQ = if' (not $ isNothing running ) (addToQueue (fromJust running) readyQueue) readyQueue
                             let (process,allotedB) = (scheduler schedule) readyQ
                             if not $ isNothing process
-                                        then let res = response $ fromJust running 
-                                              in put $ (Just $(fromJust process) {response = if' (res>=0) res (tick - (arrival $fromJust running)) , allotedBurst = allotedB}, (removeFromQueue (fromJust process) readyQ) , tick , schedule)
+                                        then let res = response $ fromJust process 
+                                              in put $ (Just $(fromJust process) {response = if' (res>=0) res (tick - (arrival $fromJust process)) , allotedBurst = allotedB}, (removeFromQueue (fromJust process) readyQ) , tick , schedule)
                                     else put $ (Nothing , readyQ , tick , schedule)
                             return Nothing 
 
@@ -135,13 +135,23 @@ initL :: [Int]
 burL :: [Int]
 pL :: [Int]
 initL = [0,10,20,25]
-burL = [5,20,30,10]
+burL = [5,5,30,10]
 pL = [2,4,1,6]
 
+f = unlines.map show 
 main = do 
         let pList = processList initL burL pL 
         let p = prog pList
+        let respList = map (\s -> sResponse s) p 
+        let turnaroundList =  map (\s -> sTurnaroundTime s) p 
+        let waitingList =  map (\s -> (sTurnaroundTime s) - (sBurst s)) p
+        writeFile "fcfs_response.txt" (f respList)
+        writeFile "fcfs_turnaround.txt" (f turnaroundList)
+        writeFile "fcfs_waiting.txt" (f waitingList)
         print p
+        print respList
+        print turnaroundList
+        print waitingList
 
 
                                                     
