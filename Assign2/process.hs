@@ -31,7 +31,7 @@ data Process = Process {
                  response :: Time ,                          --Initially assign -1
                  allotedBurst :: Time,   --Equals time quanta in case of round robin  Assign 0   
                  overAllBurst :: Time     --Initially assign 0 
-                        } deriving (Show)
+                        } deriving (Show,Ord)
 instance Eq Process where
     (==) a b = pid a == pid b
 -- Ready Process puts process to the ready queue , Runscheduler just
@@ -128,19 +128,39 @@ squence xs = catMaybes <$> sequence xs
 processList = zipWith4 f [1..] 
                 where f count arr bur p = Process { pid = count, arrival = arr , burst = bur, priority = p , response = -1 , allotedBurst = 0 , overAllBurst =0} 
 
+-- First come , first serve algorithm
+fcfs [] = (Nothing , 0)
+fcfs f = (Just l, burst l) 
+            where l = last f
+
+-- Shortest Job First Algorithm
+processtuple criteria l = (criteria l,l)
+
+sjf [] = (Nothing , 0)
+sjf f = (Just l, burst l)
+            where l = snd leastBurstTuple
+                  leastBurstTuple = foldl1 min $ map (processtuple burst) f
+-- Round Robin Algorithm
+rr [] = (Nothing , 0)
+rr f = (Just l, 5::Time)
+            where l = last f
+
+
+-- Priority Based Scheduling Algorithm
+ps [] = (Nothing , 0)
+ps f = (Just l, burst l)
+            where l = snd highestPriorityTuple
+                  highestPriorityTuple = foldl1 max $ map (processtuple priority) f
 --prog :: [Process] -> [Maybe ProcessStat]
 
 prog stmts = fst $ runState (procs stmts) (Nothing,[],0,sch)
                 where sch = Schedule {typ = 1 ,
-                                    scheduler = fcfs }
-                      fcfs [] = (Nothing , 0)
-                      fcfs f = (Just l ,burst l)
-                            where l = last f 
+                                    scheduler = rr}
 initL :: [Int]
 burL :: [Int]
 pL :: [Int]
-initL = [0,10,20,25]
-burL = [5,5,30,10]
+initL = [0,0,0,0]
+burL = [5,20,30,10]
 pL = [2,4,1,6]
 
 f = unlines.map show 
