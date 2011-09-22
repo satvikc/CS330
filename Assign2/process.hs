@@ -177,6 +177,7 @@ simulator preemptive scheduler scheduler_name stmts = do
                     writeFile (prefix ++ "_response.txt") (f respList)
                     writeFile (prefix ++ "_turnaround.txt") (f turnaroundList)
                     writeFile (prefix ++ "_waiting.txt") (f waitingList)
+                    print prefix
                     print p
                     print respList
                     print turnaroundList
