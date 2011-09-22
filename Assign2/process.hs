@@ -80,17 +80,22 @@ proc (RunMachine) = do                                                --Runs for
                             if not $ isNothing running 
                               then do  
                                 let totalBurst = (overAllBurst $ fromJust running) + 1 
-                                let leftBurst = (allotedBurst $ fromJust running) - 1 
-                                if (totalBurst /= (burst $ fromJust running)) then do
-                                                            let res = response $ fromJust running 
-                                                            put $ (Just $ (fromJust running) {response = if' (res>=0) res (tick - (arrival $fromJust running)) , allotedBurst = leftBurst , overAllBurst = totalBurst },readyQueue,tick+1 ,schedule)
-                                                            return Nothing
-                                                     else do 
-                                                                        let (process,allotedB) = (scheduler schedule) readyQueue
-                                                                        if not $ isNothing process 
-                                                                            then put $ ((Just $ (fromJust process) {allotedBurst = allotedB}), (removeFromQueue (fromJust process) readyQueue) , tick+1 , schedule)
-                                                                            else put $ (Nothing , readyQueue , tick+1 , schedule)
-                                                                        return.Just $ ProcessStat { sId = pid $ fromJust running,sResponse = response $ fromJust running , sBurst = burst $ fromJust running,sTurnaroundTime = (tick+1) - (arrival $ fromJust running) }
+                                let leftBurst = (allotedBurst $ fromJust running) - 1
+                                if ((totalBurst /= (burst $ fromJust running))) then if (leftBurst == 0) then do
+                                                                                        let readyQ = addToQueue ((fromJust running) {allotedBurst = leftBurst,overAllBurst = totalBurst}) readyQueue
+                                                                                        let (process,allotedB) = (scheduler schedule) readyQ
+                                                                                        put $ ((Just $ (fromJust process) {allotedBurst = allotedB}), (removeFromQueue (fromJust process) readyQ) , tick+1 , schedule)
+                                                                                        return Nothing 
+                                                                                                              else do 
+                                                                                                                    let res = response $ fromJust running 
+                                                                                                                    put $ (Just $ (fromJust running) {response = if' (res>=0) res (tick - (arrival $fromJust running)) , allotedBurst = leftBurst , overAllBurst = totalBurst },readyQueue,tick+1 ,schedule)
+                                                                                                                    return Nothing
+                                                                                else do 
+                                                                                            let (process,allotedB) = (scheduler schedule) readyQueue
+                                                                                            if not $ isNothing process 
+                                                                                                then put $ ((Just $ (fromJust process) {allotedBurst = allotedB}), (removeFromQueue (fromJust process) readyQueue) , tick+1 , schedule)
+                                                                                                else put $ (Nothing , readyQueue , tick+1 , schedule)
+                                                                                            return.Just $ ProcessStat { sId = pid $ fromJust running,sResponse = response $ fromJust running , sBurst = burst $ fromJust running,sTurnaroundTime = (tick+1) - (arrival $ fromJust running) }
                               else do 
                                     let (process,allotedB) = (scheduler schedule) readyQueue
                                     if not $ isNothing process
