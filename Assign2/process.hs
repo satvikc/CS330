@@ -153,9 +153,13 @@ ps f = (Just l, burst l)
                   highestPriorityTuple = foldl1 max $ map (processtuple priority) f
 --prog :: [Process] -> [Maybe ProcessStat]
 
-prog stmts = fst $ runState (procs stmts) (Nothing,[],0,sch)
-                where sch = Schedule {typ = 1 ,
-                                    scheduler = rr}
+prog preemptive scheduler stmts = fst $ runState (procs stmts) (Nothing,[],0,sch)
+                where sch = Schedule {typ = preemptive ,
+                                    scheduler = scheduler}
+
+scheduler_list = [(fcfs,"fcfs"), (sjf,"sjf") , (rr,"rr"), (ps,"ps")]
+
+--simulator stmts = 
 initL :: [Int]
 burL :: [Int]
 pL :: [Int]
@@ -164,20 +168,23 @@ burL = [5,20,30,10]
 pL = [2,4,1,6]
 
 f = unlines.map show 
-main = do 
-        let pList = processList initL burL pL 
-        let p = prog pList
-        let respList = map (\s -> sResponse s) p 
-        let turnaroundList =  map (\s -> sTurnaroundTime s) p 
-        let waitingList =  map (\s -> (sTurnaroundTime s) - (sBurst s)) p
-        writeFile "fcfs_response.txt" (f respList)
-        writeFile "fcfs_turnaround.txt" (f turnaroundList)
-        writeFile "fcfs_waiting.txt" (f waitingList)
-        print p
-        print respList
-        print turnaroundList
-        print waitingList
+simulator preemptive scheduler scheduler_name stmts = do 
+                    let p = prog preemptive scheduler stmts
+                    let prefix = show preemptive ++ "_" ++ scheduler_name
+                    let respList = map (\s -> sResponse s) p 
+                    let turnaroundList =  map (\s -> sTurnaroundTime s) p 
+                    let waitingList =  map (\s -> (sTurnaroundTime s) - (sBurst s)) p
+                    writeFile (prefix ++ "_response.txt") (f respList)
+                    writeFile (prefix ++ "_turnaround.txt") (f turnaroundList)
+                    writeFile (prefix ++ "_waiting.txt") (f waitingList)
+                    print p
+                    print respList
+                    print turnaroundList
+                    print waitingList
 
-
-                                                    
-                            
+pList = processList initL burL pL
+grandSimulator preemptive= foldl1 (>>) $ map (\(p,s) -> simulator preemptive p s pList) scheduler_list
+main = do
+        let pList = processList initL burL pL
+        grandSimulator 0
+        grandSimulator 1
