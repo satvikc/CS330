@@ -126,7 +126,7 @@ void ExceptionHandler(ExceptionType which)
         switch(type)
         {
             case SC_Fork:
-                                DEBUG(dbgSys, "This is a Fork system call by - "<< kernel->currentThread->getName() << kernel->currentThread->space->id << "\n");
+                                DEBUG(dbgSys, "This is a Fork system call by - "<< kernel->currentThread->getName() << kernel->currentThread->space->id << "with priority" << kernel->currentThread->priority << "\n");
 
                 Thread * newthread1;
                 newthread1=new Thread("child");
