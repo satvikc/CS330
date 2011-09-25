@@ -22,7 +22,7 @@
 #include "synch.h"
 #include "sysdep.h"
 #include "kernel.h"
-
+#include "debug.h"
 // this is put at the top of the execution stack, for detecting stack overflows
 const int STACK_FENCEPOST = 0xdedbeef;
 
@@ -54,6 +54,7 @@ Thread::Thread(char* threadName)
     kernel->mysysinfo->proc[index]->status = &this->status;
     kernel->mysysinfo->numprocs += 1;
 
+    DEBUG(dbgThread, "Thread created : name - " << name << ", status - " << status << ", priority - " <<priority << endl);
 }
 
 //----------------------------------------------------------------------
@@ -451,4 +452,15 @@ Thread::SelfTest()
     kernel->currentThread->Yield();
     SimpleThread(0);
 }
+int
+ComparePriority(Thread *x, Thread *y)
+{
+    if (x->priority < y->priority)
+        return 1;
+    else if (x->priority  == y->priority)
+        return 0;
+    else
+        return -1;
+}
+
 

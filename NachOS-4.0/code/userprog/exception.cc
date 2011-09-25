@@ -294,6 +294,7 @@ void ExceptionHandler(ExceptionType which)
 
             case SC_Add:
 	            DEBUG(dbgSys, "Add " << kernel->machine->ReadRegister(4) << " + " << kernel->machine->ReadRegister(5) << "\n");
+                kernel->scheduler->Print();
                 Add_Syscall();
                   /* set previous programm counter (debugging only)*/
                 kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));

@@ -31,7 +31,7 @@
 
 Scheduler::Scheduler()
 { 
-    readyList = new List<Thread *>; 
+    readyList = new SortedList<Thread *>(ComparePriority); 
     toBeDestroyed = NULL;
 } 
 
@@ -176,4 +176,5 @@ Scheduler::Print()
 {
     cout << "Ready list contents:\n";
     readyList->Apply(ThreadPrint);
+    cout << endl;
 }

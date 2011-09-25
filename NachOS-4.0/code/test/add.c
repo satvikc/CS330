@@ -11,6 +11,7 @@ int main()
 {
   int result,newres,pid;
   SysStats();
+  Add(1,1);
   pid = Fork();
   if (pid==0)
   Exec2("./add2");

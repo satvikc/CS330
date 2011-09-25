@@ -145,5 +145,7 @@ void ThreadRoot();
 // Stop running oldThread and start running newThread
 void SWITCH(Thread *oldThread, Thread *newThread);
 }
+int ComparePriority(Thread *x, Thread *y);
+
 
 #endif // THREAD_H
