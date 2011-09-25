@@ -38,7 +38,7 @@
 #define SC_Fork     16
 #define SC_Add		42
 #define SC_SysStats 99
-
+#define SC_Sleep    50
 #ifndef IN_ASM
 
 /* The system call interface.  These are the operations the Nachos

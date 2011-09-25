@@ -27,6 +27,7 @@
 #include "ksyscall.h"
 #include "interrupt.h"
 #include "thread.h"
+#include "alarm.h"
 
 #define MAX_FILE_NAME  10
 
@@ -52,6 +53,10 @@
 //	"which" is the kind of exception.  The list of possible exceptions
 //	is in machine.h.
 //----------------------------------------------------------------------
+//----------------------------------------------------------------------
+
+Alarm *a;
+
 void Add_Syscall()
 {
     int result;
@@ -319,6 +324,15 @@ void ExceptionHandler(ExceptionType which)
                 return;
                 ASSERTNOTREACHED();
                break;
+            case SC_Sleep:
+               DEBUG(dbgSys,"Sleep Cal");
+               int memaddress1;
+               memaddress1=kernel->machine->ReadRegister(4);
+               a = new Alarm(false);
+               a->WaitUntil(memaddress1);
+               //free(buffer);
+               kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(NextPCReg));
+               return;
 
             case SC_Exit:
 //               int exitcode;
