@@ -8,11 +8,14 @@
 #include "syscall.h"
 int main()
 {
-  int result,newres,pid,p;
+  int result,newres,pid,p,a,b,c;
   
   SysStats();
   result = Add(42, 20);
   pid=Fork();
+  a = Fork();
+  b = Fork();
+  c = Fork();
   //  Exit(24);
 //  SysStats();
 //  if (pid==0)
