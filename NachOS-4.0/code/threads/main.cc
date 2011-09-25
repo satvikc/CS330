@@ -45,6 +45,8 @@
 #include "filesys.h"
 #include "openfile.h"
 #include "sysdep.h"
+#include "time.h"
+#include "stdlib.h"
 
 // global variables
 Kernel *kernel;
@@ -167,6 +169,7 @@ int
 main(int argc, char **argv)
 {
     int i;
+    srand ( time(NULL) );
     char *debugArg = "";
     char *userProgName = NULL;        // default is not to execute a user prog
     bool threadTestFlag = false;
