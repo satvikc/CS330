@@ -21,6 +21,25 @@
 #include "utility.h"
 #include "callback.h"
 #include "timer.h"
+#include "thread.h"
+#include "queue"
+using namespace std;
+
+typedef struct {
+	Thread* th;
+	int wake;
+} WakeThread;
+
+class WakeComparison
+{
+public:
+	bool operator() (const WakeThread& wt1, const WakeThread& wt2) const
+	{
+		return (wt1.wake > wt2.wake);
+	}
+};
+
+typedef priority_queue<WakeThread, vector<WakeThread>, WakeComparison> wakequeue;
 
 // The following class defines a software alarm clock. 
 class Alarm : public CallBackObj {
@@ -32,8 +51,10 @@ class Alarm : public CallBackObj {
     void WaitUntil(int x);	// suspend execution until time > now + x
                                 // this method is not yet implemented
 
+    int nr1;
   private:
     Timer *timer;		// the hardware timer device
+    wakequeue m_qWaitingThreads;
 
     void CallBack();		// called when the hardware
 				// timer generates an interrupt
