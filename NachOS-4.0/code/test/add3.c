@@ -11,6 +11,10 @@ int
 main()
 {
  int result;
+ Add(30,30);
+ SysStats();
+ Sleep(2);
+ SysStats();
 result = Add(3, 3);
 //Exit(1);
   /* not reached */

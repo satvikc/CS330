@@ -23,6 +23,7 @@
 #include "sysdep.h"
 #include "kernel.h"
 #include "debug.h"
+#include <string>
 // this is put at the top of the execution stack, for detecting stack overflows
 const int STACK_FENCEPOST = 0xdedbeef;
 
@@ -46,7 +47,10 @@ Thread::Thread(char* threadName)
 					// of machine registers
     }
     space = NULL;
-    priority = rand() % 10;
+    if (strcmp(name,"main") ==0)
+        priority = -1 ;
+    else
+        priority = rand() % 10;
     int index;
     index = kernel->mysysinfo->numprocs;
     kernel->mysysinfo->proc[index] = new ProcInfo();

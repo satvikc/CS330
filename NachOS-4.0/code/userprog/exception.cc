@@ -325,10 +325,11 @@ void ExceptionHandler(ExceptionType which)
                 ASSERTNOTREACHED();
                break;
             case SC_Sleep:
-               DEBUG(dbgSys,"Sleep Cal");
+               DEBUG(dbgSys,"Sleep System Call by thread : "<< kernel->currentThread->name << "and pid : " << kernel->currentThread->space->id );
                int memaddress1;
                memaddress1=kernel->machine->ReadRegister(4);
                a = new Alarm(false);
+               DEBUG(dbgSys, "Going to WaitUntil "<< memaddress1 << endl); 
                a->WaitUntil(memaddress1);
                //free(buffer);
                kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(NextPCReg));
@@ -348,12 +349,17 @@ void ExceptionHandler(ExceptionType which)
 //                    SysHalt();
 //               }
 
-               DEBUG(dbgSys, "Current thread in SC_Exit is " << kernel->currentThread->getName() << "\n");
+               DEBUG(dbgSys,"Current Thread in SC_Exit : "<< kernel->currentThread->name << "and pid i: " << kernel->currentThread->space->id );
 //               oldLevel2 = kernel->interrupt->SetLevel(IntOff);
 //                DEBUG(dbgSys, "Running next thread . ");
                 if (kernel->currentThread->space->id ==0)
-                {SysHalt();
-                    return;}
+                {
+                
+                    if (kernel->scheduler->readyList->IsEmpty()){
+                        SysHalt();
+                        return;
+                    }
+                }
                 else
                 {  
              //  Thread *nextthread;

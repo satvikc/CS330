@@ -46,13 +46,16 @@ Alarm::Alarm(bool doRandom)
 void 
 Alarm::CallBack() 
 {
+    DEBUG(dbgThread, "Inside CallBack " );
     Interrupt *interrupt = kernel->interrupt;
     MachineStatus status = interrupt->getStatus();
 
     if (status == IdleMode) {
-    	// is it time to quit?
+    	DEBUG(dbgThread, "IdleMode");
+        // is it time to quit?
         if (!interrupt->AnyFutureInterrupts()) {
         	// turn off the timer
+    	DEBUG(dbgThread, "AnyFutureInterrupts");
 	    	timer->Disable();
 		}
     } else {

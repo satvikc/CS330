@@ -6,13 +6,15 @@
  */
 
 #include "syscall.h"
-
+#include "stdio.h"
+#include "stdlib.h"
 int main()
 {
   int result,newres,pid;
   SysStats();
   Add(1,1);
   pid = Fork();
+  Add(pid,0);
   if (pid==0)
   Exec2("./add2");
   //  Exit(24);

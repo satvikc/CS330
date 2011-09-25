@@ -12,7 +12,8 @@ main()
 {
   int result;
   result = Add(2,2);
-//Exec("./add3");
+  //Sleep(3);
+  Exec("./add3");
 //Exit(1);
   /* not reached */
 }
