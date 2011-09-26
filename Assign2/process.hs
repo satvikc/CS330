@@ -10,6 +10,12 @@ if' True a _ = a
 if' False _ b = b
 preemptive = 0 
 
+getInteger :: String -> IO [Int]
+
+getInteger str = do 
+                    content <- readFile str
+                    return $ map (\a -> (read a ::Int)) (filter (\a -> a /= "") $ lines content) 
+
 
 -- Some Type aliases 
 type PID = Int
@@ -46,7 +52,8 @@ data ProcessStat = ProcessStat {
                             sId :: PID ,
                             sResponse :: Time ,
                             sBurst :: Time ,
-                            sTurnaroundTime :: Time
+                            sTurnaroundTime :: Time ,
+                            sTick :: Time
                                 } deriving (Show)
 
 -- If Process Finishes then it Returns the process otherwise Nothing 
@@ -62,7 +69,14 @@ proc (Ready process) =  do
                             (running , readyQueue, tick , schedule ) <- get 
                             if not $ isNothing running then 
                                     put $ (running , (addToQueue process readyQueue) , tick, schedule )  -- Does not change the cpu tick 
-                                else put $ (Just process {response = (tick - arrival process), allotedBurst = burst process}, readyQueue , tick , schedule)
+                                else do 
+                                        let readyQ = addToQueue process readyQueue
+                                        let (proces,allotedB) = (scheduler schedule) readyQ
+                                        if not $ isNothing proces
+                                            then let res = response $ fromJust proces 
+                                              in put $ (Just $(fromJust proces) {response = if' (res>=0) res (tick - (arrival $fromJust proces)) , allotedBurst = allotedB}, (removeFromQueue (fromJust proces) readyQ) , tick , schedule)
+                                            else put $ (Nothing , readyQ , tick , schedule)
+                                         
                             if' (typ schedule == preemptive) (proc RunScheduler) (return Nothing)
 
 proc (RunScheduler) = do 
@@ -95,7 +109,8 @@ proc (RunMachine) = do                                                --Runs for
                                                                                             if not $ isNothing process 
                                                                                                 then put $ ((Just $ (fromJust process) {allotedBurst = allotedB}), (removeFromQueue (fromJust process) readyQueue) , tick+1 , schedule)
                                                                                                 else put $ (Nothing , readyQueue , tick+1 , schedule)
-                                                                                            return.Just $ ProcessStat { sId = pid $ fromJust running,sResponse = response $ fromJust running , sBurst = burst $ fromJust running,sTurnaroundTime = (tick+1) - (arrival $ fromJust running) }
+                                                                                            let res= response $ fromJust running
+                                                                                            return.Just $ ProcessStat { sId = pid $ fromJust running,sResponse = if' (res>=0) res (tick -(arrival $ fromJust running)) , sBurst = burst $ fromJust running,sTurnaroundTime = (tick+1) - (arrival $ fromJust running), sTick = tick + 1 }
                               else do 
                                     let (process,allotedB) = (scheduler schedule) readyQueue
                                     if not $ isNothing process
@@ -104,11 +119,6 @@ proc (RunMachine) = do                                                --Runs for
                                          else put $ (Nothing , readyQueue , tick+1 , schedule)
                                     return Nothing
 
-getInteger :: String -> IO [Int]
-
-getInteger str = do 
-                    content <- readFile str
-                    return $ map (\a -> (read a ::Int)) (filter (\a -> a /= "") $ lines content) 
 
 --procs :: [Process] -> State Machine [ProcessStat]
 
@@ -135,14 +145,14 @@ fcfs f = (Just l, burst l)
 
 -- Shortest Job First Algorithm
 processtuple criteria l = (criteria l,l)
-
 sjf [] = (Nothing , 0)
-sjf f = (Just l, burst l)
+sjf f = (Just l, remainingBurst l)
             where l = snd leastBurstTuple
-                  leastBurstTuple = foldl1 min $ map (processtuple burst) f
+                  leastBurstTuple = foldl1 min $ map (processtuple remainingBurst) f
+                  remainingBurst process = burst process - overAllBurst process
 -- Round Robin Algorithm
 rr [] = (Nothing , 0)
-rr f = (Just l, 5::Time)
+rr f = (Just l, 6::Time)
             where l = last f
 
 
@@ -160,32 +170,37 @@ prog preemptive scheduler stmts = fst $ runState (procs stmts) (Nothing,[],0,sch
 scheduler_list = [(fcfs,"fcfs"), (sjf,"sjf") , (rr,"rr"), (ps,"ps")]
 
 --simulator stmts = 
-initL :: [Int]
-burL :: [Int]
-pL :: [Int]
-initL = [0,0,0,0]
-burL = [5,20,30,10]
-pL = [2,4,1,6]
-
+-- initL :: [Int]
+-- burL :: [Int]
+-- pL :: [Int]
+--initL = [0,10,20,25]
+--burL = [5,35,30,10]
+--pL = [2,4,1,6]
+f :: Show a => [a] -> String
 f = unlines.map show 
 simulator preemptive scheduler scheduler_name stmts = do 
                     let p = prog preemptive scheduler stmts
                     let prefix = show preemptive ++ "_" ++ scheduler_name
-                    let respList = map (\s -> sResponse s) p 
+                    let respList = map (\s -> sResponse s) p
+                    let avg ls = (read (show $ sum ls) :: Double)/(fromIntegral $ length ls) 
                     let turnaroundList =  map (\s -> sTurnaroundTime s) p 
                     let waitingList =  map (\s -> (sTurnaroundTime s) - (sBurst s)) p
                     writeFile (prefix ++ "_response.txt") (f respList)
                     writeFile (prefix ++ "_turnaround.txt") (f turnaroundList)
                     writeFile (prefix ++ "_waiting.txt") (f waitingList)
                     print prefix
+                    writeFile (prefix ++ "_avg.txt") (f [avg respList,avg waitingList ,avg turnaroundList ])
                     print p
                     print respList
                     print turnaroundList
                     print waitingList
 
-pList = processList initL burL pL
-grandSimulator preemptive= foldl1 (>>) $ map (\(p,s) -> simulator preemptive p s pList) scheduler_list
+-- pList = processList initL burL pL
+grandSimulator preemptive stmts = foldl1 (>>) $ map (\(p,s) -> simulator preemptive p s stmts) scheduler_list
 main = do
+        initL <- getInteger "arrival_times.txt"
+        burL <- getInteger "burst_times.txt"
+        pL <- getInteger "priorities.txt"
         let pList = processList initL burL pL
-        grandSimulator 0
-        grandSimulator 1
+        grandSimulator 0 pList
+        grandSimulator 1 pList
