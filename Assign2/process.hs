@@ -2,7 +2,7 @@
 import Data.Maybe (fromJust)
 import "mtl" Control.Monad.State
 import Data.Char (isDigit)
-import Data.List (zipWith4,delete,partition)
+import Data.List (zipWith5,delete,partition)
 import Data.Maybe (fromJust,isNothing,catMaybes)
 import Data.Functor
 -- My version of if then else 
@@ -161,8 +161,8 @@ squence xs = catMaybes <$> sequence xs
 --squence = foldr mcons (return [])
 --  where
 --    mcons p q = p >>= \x -> q >>= \y -> if' (isNothing x) (return y) (return (x : y))
-processList = zipWith4 f [1..] 
-                where f count arr bur p = Process { pid = count, arrival = arr , burst = bur, priority = p , response = -1 , allotedBurst = 0 , overAllBurst =0} 
+processList = zipWith5 f [1..] 
+                where f count arr bur ioB p = Process { pid = count, arrival = arr , burst = bur, sumBurst = sum bur , ioBurst = ioB ,  priority = p , response = -1 , sumIOBurst = sum ioB , allotedBurst = 0 , overAllBurst =0}
 
 -- First come , first serve algorithm
 fcfs [] = (Nothing , 0)
@@ -196,12 +196,14 @@ prog preemptive scheduler stmts = fst $ runState (procs stmts) (Nothing,[],[],0,
 scheduler_list = [(fcfs,"fcfs"), (sjf,"sjf") , (rr,"rr"), (ps,"ps")]
 
 --simulator stmts = 
--- initL :: [Int]
--- burL :: [Int]
--- pL :: [Int]
---initL = [0,10,20,25]
---burL = [5,35,30,10]
---pL = [2,4,1,6]
+initL :: [Int]
+burL :: [[Int]]
+ioL :: [[Int]]
+pL :: [Int]
+initL = [0,10,20,25]
+burL = [[5,35],[10,5],[15,10],[10,20]]
+ioL = [[10],[7],[5],[10]]
+pL = [2,4,1,6]
 f :: Show a => [a] -> String
 f = unlines.map show 
 simulator preemptive scheduler scheduler_name stmts = do 
@@ -224,9 +226,9 @@ simulator preemptive scheduler scheduler_name stmts = do
 -- pList = processList initL burL pL
 grandSimulator preemptive stmts = foldl1 (>>) $ map (\(p,s) -> simulator preemptive p s stmts) scheduler_list
 main = do
-        initL <- getInteger "arrival_times.txt"
-        burL <- getInteger "burst_times.txt"
-        pL <- getInteger "priorities.txt"
-        let pList = processList initL burL pL
+        {-initL <- getInteger "arrival_times.txt"-}
+        {-burL <- getInteger "burst_times.txt"-}
+        {-pL <- getInteger "priorities.txt"-}
+        let pList = processList initL burL ioL pL
         grandSimulator 0 pList
         grandSimulator 1 pList
