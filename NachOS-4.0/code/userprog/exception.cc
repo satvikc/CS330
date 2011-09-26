@@ -86,8 +86,9 @@ void SysStatsCall()
     cout << "Idle Ticks : " << *(kernel->mysysinfo->idleticks) << "\n" ;
     cout << "System Ticks : " << *(kernel->mysysinfo->systemticks) << "\n";
     cout << "User Ticks : " << *(kernel->mysysinfo->userticks) << "\n";
+    kernel->scheduler->Print();
+    cout<<"SysStatsCall Complete";
     cout << "\n";
-
 }
 
 void StartFork(void *kernelThreadAddress)
@@ -352,15 +353,15 @@ void ExceptionHandler(ExceptionType which)
                DEBUG(dbgSys,"Current Thread in SC_Exit : "<< kernel->currentThread->name << "and pid i: " << kernel->currentThread->space->id );
 //               oldLevel2 = kernel->interrupt->SetLevel(IntOff);
 //                DEBUG(dbgSys, "Running next thread . ");
-                if (kernel->currentThread->space->id ==0)
-                {
+                //if (kernel->currentThread->space->id ==0)
+                //{
                 
-                    if (kernel->scheduler->readyList->IsEmpty()){
-                        SysHalt();
-                        return;
-                    }
-                }
-                else
+                    //if (kernel->scheduler->readyList->IsEmpty()){
+                        //SysHalt();
+                        //return;
+                    //}
+                //}
+                //else
                 {  
              //  Thread *nextthread;
                // DEBUG(dbgSys, "Finding next thread to run . ");

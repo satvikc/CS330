@@ -14,6 +14,7 @@ main()
  Add(30,30);
  SysStats();
  Sleep(2);
+ Add(5,5);
  SysStats();
 result = Add(3, 3);
 //Exit(1);

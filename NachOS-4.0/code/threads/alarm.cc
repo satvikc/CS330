@@ -44,22 +44,22 @@ Alarm::Alarm(bool doRandom)
 //----------------------------------------------------------------------
 
 void 
-Alarm::CallBack() 
+Alarm::CallBack()
 {
-    DEBUG(dbgThread, "Inside CallBack " );
+    //DEBUG(dbgThread, "Inside CallBack " );
     Interrupt *interrupt = kernel->interrupt;
     MachineStatus status = interrupt->getStatus();
 
-    if (status == IdleMode) {
-    	DEBUG(dbgThread, "IdleMode");
-        // is it time to quit?
-        if (!interrupt->AnyFutureInterrupts()) {
-        	// turn off the timer
-    	DEBUG(dbgThread, "AnyFutureInterrupts");
-	    	timer->Disable();
-		}
-    } else {
-    	// there's someone to preempt
+    //if (status != IdleMode) {
+        ////DEBUG(dbgThread, "IdleMode");
+        //// is it time to quit?
+        //if (!interrupt->AnyFutureInterrupts()) {
+            //// turn off the timer
+        //DEBUG(dbgThread, "AnyFutureInterrupts");
+			//timer->Disable();
+		//}
+    //} else {
+        //// there's someone to preempt
 		interrupt->YieldOnReturn();
 		
 		if(!m_qWaitingThreads.empty())
@@ -73,7 +73,7 @@ Alarm::CallBack()
 				nr1--;
 			}
 		}
-    }
+//    }
 }
 
 //----------------------------------------------------------------------
@@ -99,6 +99,6 @@ Alarm::WaitUntil(int ticksNo)
 	//-------------------------------------------
 	// Put current thread to sleep
 	//-------------------------------------------
-	kernel->currentThread->Sleep(FALSE);
+	kernel->currentThread->Sleep(false);
 	interrupt->SetLevel(oldLevel);
 }
