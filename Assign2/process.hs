@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances,PackageImports #-} 
 import Data.Maybe (fromJust)
 import "mtl" Control.Monad.State
@@ -98,8 +99,8 @@ proc (Ready process) =  do
                                     put $ (running , (addToQueue process readyQueue) ,waitingQueue, tick, schedule )  -- Does not change the cpu tick 
                                 else do 
                                         let readyQ = addToQueue process readyQueue
-                                        let (process,readyQ) = findProcess schedule readyQueue tick
-                                        put $ (process , readyQ ,waitingQueue, tick , schedule)
+                                        let (process,readyQ') = findProcess schedule readyQ tick
+                                        put $ (process , readyQ' ,waitingQueue, tick , schedule)
                             if' (typ schedule == preemptive) (proc RunScheduler) (return Nothing)
 
 proc (RunScheduler) = do 
@@ -114,48 +115,50 @@ proc (RunMachine) = do                                                --Runs for
                             _ <- if' (typ sch == preemptive) (proc RunScheduler) (return Nothing)
                             (run , readyQ , waitingQ,tick' ,schedule ) <- get 
                             let tick = tick'+1
-                            let (readyQueue,waitingQueue) = updateWaiting readyQueue waitingQueue
+                            let (readyQueue,waitingQueue) = updateWaiting readyQ waitingQ
                             if not $ isNothing run 
                               then do
                                 let running = fromJust run 
                                 let cBurst = reduceBurst.burst $ running 
                                 let totalBurst = (overAllBurst $running) + 1 
                                 let leftBurst = (allotedBurst $ running) - 1
-                                if ((totalBurst < (sumBurst running))) then if (head cBurst == 0) 
-                                                                                   then do
-                                                                                            let waitingQ' = addToQueue (running {allotedBurst=0,overAllBurst = totalBurst,burst=tail cBurst,response = returnResponse (response running) (arrival running) tick}) waitingQueue
-                                                                                            let (process,readyQ') = findProcess schedule readyQueue tick
-                                                                                            put $ (process , readyQ' ,waitingQ', tick , schedule)
-                                                                                            return Nothing 
-                                                                                    else if (leftBurst == 0)
-                                                                                            then do 
-                                                                                                    let readyQ = addToQueue ( running{allotedBurst = 0,overAllBurst = totalBurst,burst=cBurst,response = returnResponse (response running) (arrival running) tick}) readyQueue
-                                                                                                    let (process,readyQ') = findProcess schedule readyQ tick
-                                                                                                    put $ (process , readyQ' ,waitingQueue, tick , schedule)
-                                                                                                    return Nothing 
-                                                                                             else do
-                                                                                                        put $ ((Just $ running {overAllBurst = totalBurst,allotedBurst = leftBurst,burst=cBurst,response = returnResponse (response running) (arrival running) tick}), readyQueue,waitingQueue , tick , schedule)
-                                                                                                        return Nothing 
-                                                                                else do 
-                                                                                            let (process,readyQ') = findProcess schedule readyQueue tick
-                                                                                            put $ (process , readyQ' ,waitingQueue, tick , schedule)
-                                                                                            return.Just $ ProcessStat { sId = pid running  ,sResponse = returnResponse (response running) (arrival running) tick,sBurst = sumBurst running,sTurnaroundTime = tick - (arrival running), sTick = tick ,sIOBurst = sumIOBurst running}
+                                if (cBurst /= [0]) then if (head cBurst == 0) then do
+                                                                                     let waitingQ' = addToQueue (running {allotedBurst=0,overAllBurst = totalBurst,burst=tail cBurst,response = returnResponse (response running) (arrival running) tick'}) waitingQueue
+                                                                                     let (process,readyQ') = findProcess schedule readyQueue tick
+                                                                                     put $ (process , readyQ' ,waitingQ', tick , schedule)
+                                                                                     return Nothing 
+                                                                              else if (leftBurst == 0) then do 
+                                                                                                              let readyQ = addToQueue ( running{allotedBurst = 0,overAllBurst = totalBurst,burst=cBurst,response = returnResponse (response running) (arrival running) tick'}) readyQueue
+                                                                                                              let (process,readyQ') = findProcess schedule readyQ tick
+                                                                                                              put $ (process , readyQ' ,waitingQueue, tick , schedule)
+                                                                                                              return Nothing 
+                                                                                                       else do
+                                                                                                              put $ ((Just $ running {overAllBurst = totalBurst,allotedBurst = leftBurst,burst=cBurst,response = returnResponse (response running) (arrival running) tick'}), readyQueue,waitingQueue , tick , schedule)
+                                                                                                              return Nothing 
+                                                   else do 
+                                                          let (process,readyQ') = findProcess schedule readyQueue tick
+                                                          put $ (process , readyQ' ,waitingQueue, tick , schedule)
+                                                          return.Just $ ProcessStat { sId = pid running  ,sResponse = returnResponse (response running) (arrival running) tick',sBurst = sumBurst running,sTurnaroundTime = tick - (arrival running), sTick = tick ,sIOBurst = sumIOBurst running}
                               else do 
-                                     _ <- (proc RunScheduler)
-                                     (_,_,w,_,_) <- get 
-                                     if' (w /= []) (proc RunMachine) (return Nothing)
+                                     return Nothing
+                                     --_ <- (proc RunScheduler)
+                                     --(_,_,w,_,_) <- get 
+                                     --if' (w /= []) (proc RunMachine) (return Nothing)
 
 --procs :: [Process] -> State Machine [ProcessStat]
 -- Num procs = 5 with no . of  cpu bursts = 50  
-
-procs xs = squence process
-            where readyProcesses = map (\s -> proc (Ready s)) xs
-                  initList = map (\s -> arrival s) xs
-                  cpuBurst = map (\s -> burst s) xs
-                  intersperseList = zipWith (\a b -> b-a) initList (tail initList ++ [(last initList) + (sum $ map sum cpuBurst)])
-                  createProcessList [] [] = []
-                  createProcessList (x:xs) (y:ys) = [x] ++ replicate y (proc (RunMachine)) ++ createProcessList xs ys 
-                  process = (createProcessList readyProcesses intersperseList) 
+instance Show (State Machine (Maybe ProcessStat)) where 
+    show s = "State Machine (Maybe ProcessStat)"
+procs xs = squence $ cprocs xs
+cprocs xs = process            
+                where readyProcesses = map (\s -> proc (Ready s)) xs
+                      initList = map (\s -> arrival s) xs
+                      cpuBurst = map (\s -> burst s) xs
+                      ioB = map (\s -> ioBurst s) xs
+                      intersperseList = zipWith (\a b -> b-a) initList (tail initList ++ [(last initList) + (sum $ map sum cpuBurst) + (sum $ map sum ioB)])
+                      createProcessList [] [] = []
+                      createProcessList (x:xs) (y:ys) = [x] ++ replicate y (proc (RunMachine)) ++ createProcessList xs ys 
+                      process = (createProcessList readyProcesses intersperseList) 
 squence xs = catMaybes <$> sequence xs
 --squence = foldr mcons (return [])
 --  where
@@ -211,7 +214,7 @@ simulator preemptive scheduler scheduler_name stmts = do
                     let respList = map (\s -> sResponse s) p
                     let avg ls = (read (show $ sum ls) :: Double)/(fromIntegral $ length ls) 
                     let turnaroundList =  map (\s -> sTurnaroundTime s) p 
-                    let waitingList =  map (\s -> (sTurnaroundTime s) - (sBurst s)) p
+                    let waitingList =  map (\s -> (sTurnaroundTime s) - (sBurst s) -(sIOBurst s)) p
                     writeFile (prefix ++ "_response.txt") (f respList)
                     writeFile (prefix ++ "_turnaround.txt") (f turnaroundList)
                     writeFile (prefix ++ "_waiting.txt") (f waitingList)
@@ -228,9 +231,9 @@ pr = (head pList) {pid = 5 ,ioBurst = [1]}
 -- pList = processList initL burL pL
 grandSimulator preemptive stmts = foldl1 (>>) $ map (\(p,s) -> simulator preemptive p s stmts) scheduler_list
 main = do
-        {-initL <- getInteger "arrival_times.txt"-}
-        {-burL <- getInteger "burst_times.txt"-}
-        {-pL <- getInteger "priorities.txt"-}
+        --initL <- getInteger "arrival_times.txt"
+        --burL <- getInteger "burst_times.txt"
+        --pL <- getInteger "priorities.txt"
         let pList = processList initL burL ioL pL
         grandSimulator 0 pList
         grandSimulator 1 pList
