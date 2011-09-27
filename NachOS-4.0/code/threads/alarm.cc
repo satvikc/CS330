@@ -23,6 +23,7 @@
 Alarm::Alarm(bool doRandom)
 {
     timer = new Timer(doRandom, this);
+    sclera_counter = 0;
 }
 
 //----------------------------------------------------------------------
@@ -50,16 +51,37 @@ Alarm::CallBack()
     Interrupt *interrupt = kernel->interrupt;
     MachineStatus status = interrupt->getStatus();
 
-    //if (status != IdleMode) {
-        ////DEBUG(dbgThread, "IdleMode");
-        //// is it time to quit?
-        //if (!interrupt->AnyFutureInterrupts()) {
-            //// turn off the timer
-        //DEBUG(dbgThread, "AnyFutureInterrupts");
-			//timer->Disable();
-		//}
-    //} else {
-        //// there's someone to preempt
+    if (status == IdleMode) {
+        //DEBUG(dbgThread, "IdleMode");
+        // is it time to quit?
+        if (!interrupt->AnyFutureInterrupts()) {
+            // turn off the timer
+        DEBUG(dbgThread, "AnyFutureInterrupts");
+            timer->Disable();
+        }
+    } 
+        //interrupt->PrintPending();
+        //interrupt->DumpState();
+        // there's someone to preempt
+        if (!kernel->scheduler->highQueue->IsEmpty() )
+            kernel->scheduler->readyList = kernel->scheduler->highQueue;
+        else if (!kernel->scheduler->midQueue->IsEmpty() && sclera_counter < 800)
+        { 
+            sclera_counter+=100;
+            kernel->scheduler->readyList = kernel->scheduler->midQueue;
+        }
+        else if (!kernel->scheduler->lowQueue->IsEmpty() && sclera_counter < 1000)
+        {
+            sclera_counter+=100;
+            kernel->scheduler->readyList = kernel->scheduler->lowQueue;
+        }
+        else 
+        {   
+            sclera_counter = 0;
+            kernel->scheduler->readyList = kernel->scheduler->highQueue;
+        }
+        //kernel->scheduler->Print();
+
 		interrupt->YieldOnReturn();
 		
 		if(!m_qWaitingThreads.empty())
@@ -99,6 +121,7 @@ Alarm::WaitUntil(int ticksNo)
 	//-------------------------------------------
 	// Put current thread to sleep
 	//-------------------------------------------
+    interrupt->DumpState();
 	kernel->currentThread->Sleep(false);
 	interrupt->SetLevel(oldLevel);
 }

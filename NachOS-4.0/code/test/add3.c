@@ -13,7 +13,7 @@ main()
  int result;
  Add(30,30);
  SysStats();
- Sleep(2);
+ Sleep(200);
  Add(5,5);
  SysStats();
 result = Add(3, 3);

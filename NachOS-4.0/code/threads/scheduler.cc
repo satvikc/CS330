@@ -31,8 +31,12 @@
 
 Scheduler::Scheduler()
 { 
-    readyList = new SortedList<Thread *>(ComparePriority); 
+    readyList = highQueue;
     toBeDestroyed = NULL;
+    highQueue = new SortedList<Thread *>(ComparePriority);
+    midQueue = new SortedList<Thread *>(ComparePriority);
+    lowQueue = new SortedList<Thread *>(ComparePriority);
+
 } 
 
 //----------------------------------------------------------------------
@@ -60,7 +64,22 @@ Scheduler::ReadyToRun (Thread *thread)
     DEBUG(dbgThread, "Putting thread on ready list: " << thread->getName());
 
     thread->setStatus(READY);
-    readyList->Append(thread);
+    if (thread->priority == 9)
+    { 
+        highQueue->Append(thread);
+        DEBUG(dbgThread, "Putting thread on highQueue : " << thread->getName());
+    }
+    else if (thread->priority >= 5)
+    {
+        midQueue->Append(thread);
+        DEBUG(dbgThread, "Putting thread on midQueue : " << thread->getName()) ;
+    }
+
+    else 
+    {
+        lowQueue->Append(thread);
+        DEBUG(dbgThread, "Putting thread on lowQueue : " << thread->getName()) ;
+    }
 }
 
 //----------------------------------------------------------------------
@@ -75,6 +94,13 @@ Thread *
 Scheduler::FindNextToRun ()
 {
     ASSERT(kernel->interrupt->getLevel() == IntOff);
+    
+    if (highQueue->IsEmpty())
+        readyList = midQueue;
+    else if (midQueue->IsEmpty())
+        readyList = lowQueue;
+    else if (lowQueue->IsEmpty())
+        readyList = highQueue;
 
     if (readyList->IsEmpty()) {
 	return NULL;
@@ -174,7 +200,19 @@ Scheduler::CheckToBeDestroyed()
 void
 Scheduler::Print()
 {
-    cout << "Ready list contents:\n";
-    readyList->Apply(ThreadPrint);
+    cout <<endl;
+    //cout << "Ready list contents:\n";
+    //readyList->Apply(ThreadPrint);
     cout << endl;
+    cout << "High Queue contents:\n";
+    highQueue->Apply(ThreadPrint);
+    cout << endl;
+    cout << "Mid Queue contents:\n";
+    midQueue->Apply(ThreadPrint);
+    cout << endl;
+    cout << "Low Queue contents:\n";
+    lowQueue->Apply(ThreadPrint);
+    cout << endl;
+    cout << "Current Thread is: " << kernel->currentThread->getName() << kernel->currentThread->space->id << endl;
+
 }

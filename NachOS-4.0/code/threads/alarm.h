@@ -52,6 +52,7 @@ class Alarm : public CallBackObj {
                                 // this method is not yet implemented
 
     int nr1;
+    int sclera_counter;
   private:
     Timer *timer;		// the hardware timer device
     wakequeue m_qWaitingThreads;

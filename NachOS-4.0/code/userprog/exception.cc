@@ -333,8 +333,15 @@ void ExceptionHandler(ExceptionType which)
                DEBUG(dbgSys, "Going to WaitUntil "<< memaddress1 << endl); 
                a->WaitUntil(memaddress1);
                //free(buffer);
-               kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(NextPCReg));
-               return;
+//               kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(NextPCReg));
+                   /* set previous programm counter (debugging only)*/
+                kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                /* set next programm counter for brach execution */
+                kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+
+              return;
 
             case SC_Exit:
 //               int exitcode;

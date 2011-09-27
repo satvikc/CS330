@@ -47,7 +47,7 @@ Thread::Thread(char* threadName)
 					// of machine registers
     }
     space = NULL;
-    if (strcmp(name,"main") ==0)
+    if (strcmp(name,"main") ==0 || strcmp(name,"postal worker") == 0)
         priority = -1 ;
     else
         priority = rand() % 10;
@@ -270,7 +270,7 @@ Thread::Sleep (bool finishing)
     DEBUG(dbgThread, "Sleeping thread: " << name);
 
     status = BLOCKED;
-    while ((nextThread = kernel->scheduler->FindNextToRun()) == NULL)
+   while ((nextThread = kernel->scheduler->FindNextToRun()) == NULL)
 	kernel->interrupt->Idle();	// no one to run, wait for an interrupt
     
     // returns when it's time for us to run
