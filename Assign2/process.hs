@@ -17,6 +17,9 @@ getInteger str = do
                     content <- readFile str
                     return $ map (\a -> (read a ::Int)) (filter (\a -> a /= "") $ lines content) 
 
+getBursts str = do 
+                    content <- readFile str
+                    return $ map (map(\a -> (read a ::Int)) . words) $ lines content
 
 -- Some Type aliases 
 type PID = Int
@@ -198,14 +201,14 @@ prog preemptive scheduler stmts = fst $ runState (procs stmts) (Nothing,[],[],0,
 scheduler_list = [(fcfs,"fcfs"), (sjf,"sjf") , (rr,"rr"), (ps,"ps")]
 
 --simulator stmts = 
-initL :: [Int]
-burL :: [[Int]]
-ioL :: [[Int]]
-pL :: [Int]
-initL = [0,10,20,25]
-burL = [[5,35],[10,5],[15,10],[10,20]]
-ioL = [[10],[7],[5],[10]]
-pL = [2,4,1,6]
+{-initL :: [Int]-}
+{-burL :: [[Int]]-}
+{-ioL :: [[Int]]-}
+{-pL :: [Int]-}
+--initL = [0,10,20,25]
+--burL = [[5,35],[10,5],[15,10],[10,20]]
+--ioL = [[10],[7],[5],[10]]
+--pL = [2,4,1,6]
 f :: Show a => [a] -> String
 f = unlines.map show 
 simulator preemptive scheduler scheduler_name stmts = do 
@@ -225,15 +228,16 @@ simulator preemptive scheduler scheduler_name stmts = do
                     print turnaroundList
                     print waitingList
 
-pList = processList initL burL ioL pL
-pr = (head pList) {pid = 5 ,ioBurst = [1]}
+{-pList = processList initL burL ioL pL-}
+{-pr = (head pList) {pid = 5 ,ioBurst = [1]}-}
 
 -- pList = processList initL burL pL
 grandSimulator preemptive stmts = foldl1 (>>) $ map (\(p,s) -> simulator preemptive p s stmts) scheduler_list
 main = do
-        --initL <- getInteger "arrival_times.txt"
-        --burL <- getInteger "burst_times.txt"
-        --pL <- getInteger "priorities.txt"
+        initL <- getInteger "arrival_times.txt"
+        burL <- getBursts "cpu_bursts.txt"
+        ioL <- getBursts "io_bursts.txt"
+        pL <- getInteger "priorities.txt"
         let pList = processList initL burL ioL pL
         grandSimulator 0 pList
         grandSimulator 1 pList

@@ -1,7 +1,13 @@
 import numpy.random
 import math
 N = 20
-bursts = list(map(math.ceil,numpy.random.exponential(10,N)))
+q = 2
+def cpubursts(q):
+    return list(map(math.ceil,numpy.random.exponential(10,q)))
+
+def iobursts(q):
+    return numpy.random.randint(10,20,q)
+
 priorities = numpy.random.randint(0,10,N)
 interpoisson = numpy.random.poisson(10,N-1)
 def running_sum(it):
@@ -12,12 +18,28 @@ def running_sum(it):
         yield s
 arrivals = list(running_sum(interpoisson))
 
-files = ["burst_times.txt", "arrival_times.txt", "priorities.txt"]
-times = [bursts , arrivals , priorities]
+files = ["arrival_times.txt", "priorities.txt"]
+times = [arrivals , priorities]
 for (f,t) in zip(files,times):
     f = open(f,'w')
     for i in t:
         f.write(str(i)+"\n")
     f.close()
+
+f = open("cpu_bursts.txt",'w')
+for i in range(N):
+    cpuburstList = cpubursts(q);
+    for j in cpuburstList:
+        f.write(str(j)+" ")
+    f.write("\n");
+f.close()
+
+f = open("io_bursts.txt",'w')
+for i in range(N):
+    ioburstsList = iobursts(q-1);
+    for j in ioburstsList:
+        f.write(str(j)+" ")
+    f.write("\n");
+f.close()
 
 
