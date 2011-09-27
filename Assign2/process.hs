@@ -29,7 +29,7 @@ type Machine = (Maybe Process , ReadyQueue , WaitingQueue, Time , Schedule)
 data Schedule = Schedule {
                     typ :: Int ,--Preamptive = 0  or Non Preamptive = 1
                     scheduler :: Scheduler 
-                        }
+                        } 
 data Process = Process { 
                  pid :: PID ,
                  arrival :: Time ,
@@ -65,86 +65,85 @@ data ProcessStat = ProcessStat {
                                 } deriving (Show)
 
 -- If Process Finishes then it Returns the process otherwise Nothing 
-proc :: Stmt -> State Machine (Maybe ProcessStat)
 
 addToQueue :: Process -> ReadyQueue -> ReadyQueue  -- Adds at the end of the queue  . To be implemented
 addToQueue a r = a:r
 removeFromQueue :: Process -> ReadyQueue -> ReadyQueue -- Note we are not worried if process is not present as we will  ensure it will be present .  To be implemented
 removeFromQueue a r = delete a r
 
+reduceBurst ::  Num a => [a] -> [a]
 reduceBurst (x:xs) = (x-1:xs) 
 
-updateWaiting :: WaitingQueue->ReadyQueue->(ReadyQueue,WaitingQueue)
+updateWaiting :: WaitingQueue -> ReadyQueue -> (ReadyQueue, WaitingQueue)
+updateWaiting readyQueue [] = (readyQueue,[])
 updateWaiting readyQueue waitingQueue = (rQ ++ readyQueue,wQ)
                                             where f process = process {ioBurst = reduceBurst $ ioBurst process}
                                                   (rQ,wQ) = partition g $ map f waitingQueue
                                                   g process = if' ((head $ ioBurst process) == 0)  True False 
 
-returnResponse :: Time -> Time -> Time
-returnResponse res tick = if' (res<0) tick res 
+returnResponse :: Time -> Time ->Time-> Time
+returnResponse res arrival tick = if' (res<0) (tick-arrival) res 
 
+findProcess sch readyQ tick= do 
+                                let (proces,allotedB) = (scheduler sch) readyQ
+                                if not $ isNothing proces
+                                    then let res = response $ fromJust proces 
+                                        in (Just $(fromJust proces) {response = if' (res>=0) res (tick - (arrival $fromJust proces)) , allotedBurst = allotedB}, (removeFromQueue (fromJust proces) readyQ))
+                                    else (Nothing , readyQ )
+
+proc :: Stmt -> State Machine (Maybe ProcessStat)
 proc (Ready process) =  do
                             (running , readyQueue, waitingQueue, tick , schedule ) <- get 
-                            if not $ isNothing running then 
+                            if (not $ isNothing running) then 
                                     put $ (running , (addToQueue process readyQueue) ,waitingQueue, tick, schedule )  -- Does not change the cpu tick 
                                 else do 
                                         let readyQ = addToQueue process readyQueue
-                                        let (proces,allotedB) = (scheduler schedule) readyQ
-                                        if not $ isNothing proces
-                                            then let res = response $ fromJust proces 
-                                              in put $ (Just $(fromJust proces) {response = if' (res>=0) res (tick - (arrival $fromJust proces)) , allotedBurst = allotedB}, (removeFromQueue (fromJust proces) readyQ) ,waitingQueue, tick , schedule)
-                                            else put $ (Nothing , readyQ ,waitingQueue, tick , schedule)
+                                        let (process,readyQ) = findProcess schedule readyQueue tick
+                                        put $ (process , readyQ ,waitingQueue, tick , schedule)
                             if' (typ schedule == preemptive) (proc RunScheduler) (return Nothing)
 
 proc (RunScheduler) = do 
                             (running , readyQueue ,waitingQueue, tick,schedule ) <- get   -- If scheduler is called ensured that the process will be preempted and not finished 
                             let readyQ = if' (not $ isNothing running ) (addToQueue (fromJust running) readyQueue) readyQueue
-                            let (process,allotedB) = (scheduler schedule) readyQ
-                            if not $ isNothing process
-                                        then let res = response $ fromJust process 
-                                              in put $ (Just $(fromJust process) {response = if' (res>=0) res (tick - (arrival $fromJust process)) , allotedBurst = allotedB}, (removeFromQueue (fromJust process) readyQ) ,waitingQueue, tick , schedule)
-                                    else put $ (Nothing , readyQ ,waitingQueue, tick , schedule)
+                            let (process,readyQ') = findProcess schedule readyQ tick
+                            put $ (process , readyQ' ,waitingQueue, tick , schedule)
                             return Nothing 
 
 proc (RunMachine) = do                                                --Runs for a single tick only 
                             (_, _ , _,_,sch ) <- get 
                             _ <- if' (typ sch == preemptive) (proc RunScheduler) (return Nothing)
-                            (running , readyQ , waitingQ,tick' ,schedule ) <- get 
+                            (run , readyQ , waitingQ,tick' ,schedule ) <- get 
                             let tick = tick'+1
-                            let (readyQueue,waitingQueue) = updateWaiting waitingQueue readyQueue
-                            if not $ isNothing running 
-                              then do  
-                                let cBurst = reduceBurst.burst $ fromJust running 
-                                let totalBurst = (overAllBurst $ fromJust running) + 1 
-                                let leftBurst = (allotedBurst $ fromJust running) - 1
-                                if ((totalBurst < (sumBurst $ fromJust running))) then if (head cBurst == 0) 
+                            let (readyQueue,waitingQueue) = updateWaiting readyQueue waitingQueue
+                            if not $ isNothing run 
+                              then do
+                                let running = fromJust run 
+                                let cBurst = reduceBurst.burst $ running 
+                                let totalBurst = (overAllBurst $running) + 1 
+                                let leftBurst = (allotedBurst $ running) - 1
+                                if ((totalBurst < (sumBurst running))) then if (head cBurst == 0) 
                                                                                    then do
-                                                                                        let waitingQ' = addToQueue ((fromJust running) {allotedBurst = leftBurst,overAllBurst = totalBurst,burst=tail cBurst,response = returnResponse (response $ fromJust running) tick}) waitingQueue
-                                                                                        let (process,allotedB) = (scheduler schedule) readyQueue
-                                                                                        if not $ isNothing process 
-                                                                                            then put $ ((Just $ (fromJust process) {allotedBurst = allotedB,response = returnResponse (response $ fromJust process) tick}), (removeFromQueue (fromJust process) readyQueue) ,waitingQ', tick , schedule)
-                                                                                            else put $ (Nothing , readyQueue ,waitingQueue, tick , schedule)
-                                                                                        return Nothing 
+                                                                                            let waitingQ' = addToQueue (running {allotedBurst=0,overAllBurst = totalBurst,burst=tail cBurst,response = returnResponse (response running) (arrival running) tick}) waitingQueue
+                                                                                            let (process,readyQ') = findProcess schedule readyQueue tick
+                                                                                            put $ (process , readyQ' ,waitingQ', tick , schedule)
+                                                                                            return Nothing 
                                                                                     else if (leftBurst == 0)
                                                                                             then do 
-                                                                                                    let readyQ' = addToQueue ((fromJust running) {allotedBurst = leftBurst,overAllBurst = totalBurst,burst=cBurst,response = returnResponse (response $ fromJust running) tick}) readyQueue
-                                                                                                    let (process,allotedB) = (scheduler schedule) readyQ'
-                                                                                                    if not $ isNothing process 
-                                                                                                        then put $ ((Just $ (fromJust process) {allotedBurst = allotedB,response = returnResponse (response $ fromJust process) tick}), (removeFromQueue (fromJust process) readyQ') ,waitingQueue, tick , schedule)
-                                                                                                        else put $ (Nothing , readyQueue ,waitingQueue, tick , schedule)
+                                                                                                    let readyQ = addToQueue ( running{allotedBurst = 0,overAllBurst = totalBurst,burst=cBurst,response = returnResponse (response running) (arrival running) tick}) readyQueue
+                                                                                                    let (process,readyQ') = findProcess schedule readyQ tick
+                                                                                                    put $ (process , readyQ' ,waitingQueue, tick , schedule)
                                                                                                     return Nothing 
                                                                                              else do
-                                                                                                        put $ ((Just $ (fromJust running) {overAllBurst = totalBurst,allotedBurst = leftBurst,burst=cBurst,response = returnResponse (response $ fromJust running) tick}), readyQueue,waitingQueue , tick , schedule)
+                                                                                                        put $ ((Just $ running {overAllBurst = totalBurst,allotedBurst = leftBurst,burst=cBurst,response = returnResponse (response running) (arrival running) tick}), readyQueue,waitingQueue , tick , schedule)
                                                                                                         return Nothing 
                                                                                 else do 
-                                                                                            let (process,allotedB) = (scheduler schedule) readyQueue
-                                                                                            if not $ isNothing process 
-                                                                                                then put $ ((Just $ (fromJust process) {allotedBurst = allotedB,response = returnResponse (response $ fromJust process) tick}), (removeFromQueue (fromJust process) readyQueue) ,waitingQueue, tick , schedule)
-                                                                                                else put $ (Nothing , readyQueue ,waitingQueue, tick , schedule)
-                                                                                            return.Just $ ProcessStat { sId = pid $ fromJust running  ,sResponse = returnResponse (response $ fromJust running) tick,sBurst = sumBurst $ fromJust running,sTurnaroundTime = tick - (arrival $ fromJust running), sTick = tick ,sIOBurst = sumIOBurst $ fromJust running}
+                                                                                            let (process,readyQ') = findProcess schedule readyQueue tick
+                                                                                            put $ (process , readyQ' ,waitingQueue, tick , schedule)
+                                                                                            return.Just $ ProcessStat { sId = pid running  ,sResponse = returnResponse (response running) (arrival running) tick,sBurst = sumBurst running,sTurnaroundTime = tick - (arrival running), sTick = tick ,sIOBurst = sumIOBurst running}
                               else do 
                                      _ <- (proc RunScheduler)
-                                     proc RunMachine
+                                     (_,_,w,_,_) <- get 
+                                     if' (w /= []) (proc RunMachine) (return Nothing)
 
 --procs :: [Process] -> State Machine [ProcessStat]
 -- Num procs = 5 with no . of  cpu bursts = 50  
@@ -222,6 +221,9 @@ simulator preemptive scheduler scheduler_name stmts = do
                     print respList
                     print turnaroundList
                     print waitingList
+
+pList = processList initL burL ioL pL
+pr = (head pList) {pid = 5 ,ioBurst = [1]}
 
 -- pList = processList initL burL pL
 grandSimulator preemptive stmts = foldl1 (>>) $ map (\(p,s) -> simulator preemptive p s stmts) scheduler_list
