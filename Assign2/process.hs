@@ -65,7 +65,8 @@ data ProcessStat = ProcessStat {
                             sBurst :: Time ,
                             sIOBurst :: Time,
                             sTurnaroundTime :: Time ,
-                            sTick :: Time
+                            sTick :: Time,
+                            sArrival :: Time
                                 } deriving (Show)
 
 -- If Process Finishes then it Returns the process otherwise Nothing 
@@ -141,8 +142,9 @@ proc (RunMachine) = do                                                --Runs for
                                                    else do 
                                                           let (process,readyQ') = findProcess schedule readyQueue tick
                                                           put $ (process , readyQ' ,waitingQueue, tick , schedule)
-                                                          return.Just $ ProcessStat { sId = pid running  ,sResponse = returnResponse (response running) (arrival running) tick',sBurst = sumBurst running,sTurnaroundTime = tick - (arrival running), sTick = tick ,sIOBurst = sumIOBurst running}
+                                                          return.Just $ ProcessStat { sId = pid running  ,sResponse = returnResponse (response running) (arrival running) tick',sBurst = sumBurst running,sTurnaroundTime = tick - (arrival running), sTick = tick ,sIOBurst = sumIOBurst running,sArrival = arrival running}
                               else do 
+                                     put $ (run ,readyQueue,waitingQueue,tick,schedule)
                                      return Nothing
                                      --_ <- (proc RunScheduler)
                                      --(_,_,w,_,_) <- get 
@@ -156,9 +158,9 @@ procs xs = squence $ cprocs xs
 cprocs xs = process            
                 where readyProcesses = map (\s -> proc (Ready s)) xs
                       initList = map (\s -> arrival s) xs
-                      cpuBurst = map (\s -> burst s) xs
-                      ioB = map (\s -> ioBurst s) xs
-                      intersperseList = zipWith (\a b -> b-a) initList (tail initList ++ [(last initList) + (sum $ map sum cpuBurst) + (sum $ map sum ioB)])
+                      cpuBurst = map (\s -> sumBurst s) xs
+                      ioB = map (\s -> sumIOBurst s) xs
+                      intersperseList = zipWith (\a b -> b-a) initList (tail initList ++ [(last initList) + (sum cpuBurst) + (sum ioB)])
                       createProcessList [] [] = []
                       createProcessList (x:xs) (y:ys) = [x] ++ replicate y (proc (RunMachine)) ++ createProcessList xs ys 
                       process = (createProcessList readyProcesses intersperseList) 
@@ -205,10 +207,10 @@ scheduler_list = [(fcfs,"fcfs"), (sjf,"sjf") , (rr,"rr"), (ps,"ps")]
 {-burL :: [[Int]]-}
 {-ioL :: [[Int]]-}
 {-pL :: [Int]-}
---initL = [0,10,20,25]
---burL = [[5,35],[10,5],[15,10],[10,20]]
---ioL = [[10],[7],[5],[10]]
---pL = [2,4,1,6]
+{-initL = [0,10,20,25]-}
+{-burL = [[5],[10],[15],[10]]-}
+{-ioL = [[],[],[],[]]-}
+{-pL = [2,4,1,6]-}
 f :: Show a => [a] -> String
 f = unlines.map show 
 simulator preemptive scheduler scheduler_name stmts = do 
