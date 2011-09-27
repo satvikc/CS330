@@ -51,18 +51,33 @@ Alarm::CallBack()
     Interrupt *interrupt = kernel->interrupt;
     MachineStatus status = interrupt->getStatus();
 
-    if (status == IdleMode) {
-        //DEBUG(dbgThread, "IdleMode");
-        // is it time to quit?
-        if (!interrupt->AnyFutureInterrupts()) {
-            // turn off the timer
-        DEBUG(dbgThread, "AnyFutureInterrupts");
-            timer->Disable();
-        }
-    } 
+    //if (status == IdleMode) {
+        ////DEBUG(dbgThread, "IdleMode");
+        //// is it time to quit?
+        //if (!interrupt->AnyFutureInterrupts()) {
+            //// turn off the timer
+        //DEBUG(dbgThread, "AnyFutureInterrupts");
+            //timer->Disable();
+        //}
+    //} 
         //interrupt->PrintPending();
         //interrupt->DumpState();
         // there's someone to preempt
+		interrupt->YieldOnReturn();
+		
+		if(!m_qWaitingThreads.empty())
+		{
+			DEBUG(dbgThread, "[Alarm::CallBack()] Checking to wake the thread: " << m_qWaitingThreads.top().th->getName());
+			if(kernel->stats->totalTicks > m_qWaitingThreads.top().wake)
+			{
+				DEBUG(dbgThread, "[Alarm::CallBack()] Waking up: " << m_qWaitingThreads.top().th->getName());
+				kernel->scheduler->ReadyToRun(m_qWaitingThreads.top().th);
+				m_qWaitingThreads.pop();
+				nr1--;
+			}
+		}
+
+
         if (!kernel->scheduler->highQueue->IsEmpty() )
             kernel->scheduler->readyList = kernel->scheduler->highQueue;
         else if (!kernel->scheduler->midQueue->IsEmpty() && sclera_counter < 800)
@@ -81,21 +96,9 @@ Alarm::CallBack()
             kernel->scheduler->readyList = kernel->scheduler->highQueue;
         }
         //kernel->scheduler->Print();
+        
 
-		interrupt->YieldOnReturn();
-		
-		if(!m_qWaitingThreads.empty())
-		{
-			DEBUG(dbgThread, "[Alarm::CallBack()] Checking to wake the thread: " << m_qWaitingThreads.top().th->getName());
-			if(kernel->stats->totalTicks > m_qWaitingThreads.top().wake)
-			{
-				DEBUG(dbgThread, "[Alarm::CallBack()] Waking up: " << m_qWaitingThreads.top().th->getName());
-				kernel->scheduler->ReadyToRun(m_qWaitingThreads.top().th);
-				m_qWaitingThreads.pop();
-				nr1--;
-			}
-		}
-//    }
+
 }
 
 //----------------------------------------------------------------------
@@ -121,7 +124,7 @@ Alarm::WaitUntil(int ticksNo)
 	//-------------------------------------------
 	// Put current thread to sleep
 	//-------------------------------------------
-    interrupt->DumpState();
+//    interrupt->DumpState();
 	kernel->currentThread->Sleep(false);
 	interrupt->SetLevel(oldLevel);
 }

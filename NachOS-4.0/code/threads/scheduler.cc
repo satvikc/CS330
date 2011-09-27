@@ -94,13 +94,28 @@ Thread *
 Scheduler::FindNextToRun ()
 {
     ASSERT(kernel->interrupt->getLevel() == IntOff);
-    
-    if (highQueue->IsEmpty())
-        readyList = midQueue;
-    else if (midQueue->IsEmpty())
-        readyList = lowQueue;
-    else if (lowQueue->IsEmpty())
+
+
+    //HUGE PROBLEM IN THIS SECTION
+    if (!highQueue->IsEmpty())
+    {
         readyList = highQueue;
+        //DEBUG(dbgThread,"Ready List is midQueue");
+    }
+    else if (!midQueue->IsEmpty())
+    {
+        readyList = midQueue;
+        //DEBUG(dbgThread,"Ready List is lowQueue");
+    }
+    else if (!lowQueue->IsEmpty())
+    {
+        readyList = lowQueue;
+        //DEBUG(dbgThread,"Ready List is highQueue");
+    }
+    else
+    {
+        return NULL;
+    }
 
     if (readyList->IsEmpty()) {
 	return NULL;

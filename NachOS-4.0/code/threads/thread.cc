@@ -47,7 +47,7 @@ Thread::Thread(char* threadName)
 					// of machine registers
     }
     space = NULL;
-    if (strcmp(name,"main") ==0 || strcmp(name,"postal worker") == 0)
+    if (strcmp(name,"main") ==0 || strcmp(name,"postal worker") ==0)
         priority = -1 ;
     else
         priority = rand() % 10;
