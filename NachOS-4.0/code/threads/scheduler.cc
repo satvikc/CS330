@@ -219,13 +219,13 @@ Scheduler::Print()
     //cout << "Ready list contents:\n";
     //readyList->Apply(ThreadPrint);
     cout << endl;
-    cout << "High Queue contents:\n";
+    cout << "High Queue contents: ";
     highQueue->Apply(ThreadPrint);
     cout << endl;
-    cout << "Mid Queue contents:\n";
+    cout << "Mid Queue contents: ";
     midQueue->Apply(ThreadPrint);
     cout << endl;
-    cout << "Low Queue contents:\n";
+    cout << "Low Queue contents: ";
     lowQueue->Apply(ThreadPrint);
     cout << endl;
     cout << "Current Thread is: " << kernel->currentThread->getName() << kernel->currentThread->space->id << endl;
