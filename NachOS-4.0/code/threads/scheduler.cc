@@ -97,12 +97,12 @@ Scheduler::FindNextToRun ()
 
 
     //HUGE PROBLEM IN THIS SECTION
-    if (!highQueue->IsEmpty())
+    if (!highQueue->IsEmpty() || kernel->currentThread->priority == 9)
     {
         readyList = highQueue;
         //DEBUG(dbgThread,"Ready List is midQueue");
     }
-    else if (!midQueue->IsEmpty())
+    else if (!midQueue->IsEmpty() )
     {
         readyList = midQueue;
         //DEBUG(dbgThread,"Ready List is lowQueue");

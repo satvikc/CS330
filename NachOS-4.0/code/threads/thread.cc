@@ -24,6 +24,8 @@
 #include "kernel.h"
 #include "debug.h"
 #include <string>
+#include <fstream>
+using namespace std;
 // this is put at the top of the execution stack, for detecting stack overflows
 const int STACK_FENCEPOST = 0xdedbeef;
 
@@ -40,7 +42,10 @@ Thread::Thread(char* threadName)
     name = threadName;
     stackTop = NULL;
     stack = NULL;
+
     status = JUST_CREATED;
+    arrival_time = kernel->stats->totalTicks;
+
     for (int i = 0; i < MachineStateSize; i++) {
 	machineState[i] = NULL;		// not strictly necessary, since
 					// new thread ignores contents 
@@ -51,6 +56,13 @@ Thread::Thread(char* threadName)
         priority = -1 ;
     else
         priority = rand() % 10;
+    response_time = -1;
+    //arrival_time = -1;
+    burst_time = 0;
+    count = 0;
+    waiting_time = -1;
+    turnaround_time = -1;
+    first_response_flag = false;
     int index;
     index = kernel->mysysinfo->numprocs;
     kernel->mysysinfo->proc[index] = new ProcInfo();
@@ -103,7 +115,35 @@ Thread::~Thread()
 //----------------------------------------------------------------------
 void Thread::setStatus(ThreadStatus st)
 {
+    DEBUG(dbgThread,"Change status from : "<<status<<" to : "<<st<<endl);
+    DEBUG(dbgThread,"TotalTics = "<<kernel->stats->totalTicks);
+    if ( st == 1 && !first_response_flag) 
+    {
+        response_time = kernel->stats->totalTicks - arrival_time;
+    }
+    if (st == 1) first_response_flag = true;
+    if (st== 1) //Any to Running
+    {   
+        burst_time -= kernel->stats->totalTicks;
+    }
+    if (status ==  1 )
+    {
+        burst_time += kernel->stats->totalTicks;
+        
+    }
+    if (st==3)
+    {
+        count +=1;
+        waiting_time -= kernel->stats->totalTicks -1 ;
+    }
+    if (status == 3)
+    {
+
+        count -=1;
+        waiting_time += kernel->stats->totalTicks;
+    }
     status = st;
+
     //if (name == "main") 
     //    return ;
     //else {
@@ -268,8 +308,16 @@ Thread::Sleep (bool finishing)
     ASSERT(kernel->interrupt->getLevel() == IntOff);
     
     DEBUG(dbgThread, "Sleeping thread: " << name);
-
-    status = BLOCKED;
+    
+    this->setStatus(BLOCKED);
+    if (finishing)
+    {  
+        waiting_time += kernel->stats->totalTicks;
+        turnaround_time = kernel->stats->totalTicks - arrival_time;
+        waiting_time = turnaround_time - waiting_time - burst_time;
+        this->PrintStats(); 
+    }
+    //status = BLOCKED;
    while ((nextThread = kernel->scheduler->FindNextToRun()) == NULL)
 	kernel->interrupt->Idle();	// no one to run, wait for an interrupt
     
@@ -466,5 +514,34 @@ ComparePriority(Thread *x, Thread *y)
     else
         return -1;
 }
-
-
+void Thread::PrintStats()
+{
+    this->WriteStats();
+    cout<<"Thread Name : "<<name;
+    cout<<"\nPID : "<<this->space->id;
+    cout<<"\nPriority : "<<priority;
+    cout<<"\nBurst Time : "<<burst_time;
+    cout<<"\nCounter : "<<count;
+    cout<<"\nArrival Time : "<<arrival_time;
+    cout<<"\nResponse Time : "<<response_time;
+    cout<<"\nWaiting Time : "<<waiting_time;
+    cout<<"\nTurnaround Time : "<<turnaround_time<<endl;
+    
+}
+void Thread::WriteStats()
+{
+    ofstream myfile;
+    myfile.open("stats.txt", ios::app);
+    
+    myfile<<"Thread Name : "<<name<<endl;
+    myfile<<"TotalTics : "<<kernel->stats->totalTicks;
+    myfile<<"\nPID : "<<this->space->id;
+    myfile<<"\nPriority : "<<priority;
+    myfile<<"\nBurst Time : "<<burst_time;
+    myfile<<"\nCounter : "<<count;
+    myfile<<"\nArrival Time : "<<arrival_time;
+    myfile<<"\nResponse Time : "<<response_time;
+    myfile<<"\nWaiting Time : "<<waiting_time;
+    myfile<<"\nTurnaround Time : "<<turnaround_time<<endl<<endl;
+    myfile.close();
+}

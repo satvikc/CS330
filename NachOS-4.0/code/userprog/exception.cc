@@ -358,7 +358,9 @@ void ExceptionHandler(ExceptionType which)
 //               }
 
                DEBUG(dbgSys,"Current Thread in SC_Exit : "<< kernel->currentThread->name << "and pid i: " << kernel->currentThread->space->id );
-//               oldLevel2 = kernel->interrupt->SetLevel(IntOff);
+
+
+//             oldLevel2 = kernel->interrupt->SetLevel(IntOff);
 //                DEBUG(dbgSys, "Running next thread . ");
                 //if (kernel->currentThread->space->id ==0)
                 //{
@@ -375,6 +377,7 @@ void ExceptionHandler(ExceptionType which)
              // nextthread = kernel->scheduler->FindNextToRun();
               //  nextthread->RestoreUserState();
                     kernel->currentThread->Finish();
+               
                 }
                 kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
                 /* set programm counter to next instruction (all Instructions are 4 byte wide)*/

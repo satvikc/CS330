@@ -21,9 +21,9 @@ int main()
   if (pid==0)
   Exec2("./add2");
   //  Exit(24);
-  Sleep(500);
+  //Sleep(500);
   newres = Add(10,20);
-//  SysStats();
+  SysStats();
 //  Halt();
   //Exit(0);
   /* not reached */
