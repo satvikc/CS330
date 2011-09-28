@@ -6,6 +6,7 @@ import Data.Char (isDigit)
 import Data.List (zipWith5,delete,partition)
 import Data.Maybe (fromJust,isNothing,catMaybes)
 import Data.Functor
+import qualified Data.Map as Map
 -- My version of if then else 
 if' True a _ = a
 if' False _ b = b
@@ -28,7 +29,8 @@ type ReadyQueue = [Process]
 type WaitingQueue = [Process]
 type Scheduler = ReadyQueue -> (Maybe Process,Time)
 type Machine = (Maybe Process , ReadyQueue , WaitingQueue, Time , Schedule)
-
+instance Show Schedule where 
+    show s = show $ typ s
 -- Some Data Types 
 data Schedule = Schedule {
                     typ :: Int ,--Preamptive = 0  or Non Preamptive = 1
@@ -66,7 +68,8 @@ data ProcessStat = ProcessStat {
                             sIOBurst :: Time,
                             sTurnaroundTime :: Time ,
                             sTick :: Time,
-                            sArrival :: Time
+                            sArrival :: Time,
+                            sPriority :: Int
                                 } deriving (Show)
 
 -- If Process Finishes then it Returns the process otherwise Nothing 
@@ -99,13 +102,18 @@ findProcess sch readyQ tick= do
 proc :: Stmt -> State Machine (Maybe ProcessStat)
 proc (Ready process) =  do
                             (running , readyQueue, waitingQueue, tick , schedule ) <- get 
-                            if (not $ isNothing running) then 
-                                    put $ (running , (addToQueue process readyQueue) ,waitingQueue, tick, schedule )  -- Does not change the cpu tick 
+                            if (not $ isNothing running )
+                                then if (typ schedule /= preemptive)
+                                         then put $ (running , (addToQueue process readyQueue) ,waitingQueue, tick, schedule )  -- Does not change the cpu tick 
+                                         else do 
+                                                let readyQ = addToQueue process (addToQueue (fromJust running) readyQueue)
+                                                let (process,readyQ') = findProcess schedule readyQ tick
+                                                put $ (process , readyQ' ,waitingQueue, tick , schedule)
                                 else do 
                                         let readyQ = addToQueue process readyQueue
                                         let (process,readyQ') = findProcess schedule readyQ tick
                                         put $ (process , readyQ' ,waitingQueue, tick , schedule)
-                            if' (typ schedule == preemptive) (proc RunScheduler) (return Nothing)
+                            return Nothing 
 
 proc (RunScheduler) = do 
                             (running , readyQueue ,waitingQueue, tick,schedule ) <- get   -- If scheduler is called ensured that the process will be preempted and not finished 
@@ -115,8 +123,8 @@ proc (RunScheduler) = do
                             return Nothing 
 
 proc (RunMachine) = do                                                --Runs for a single tick only 
-                            (_, _ , _,_,sch ) <- get 
-                            _ <- if' (typ sch == preemptive) (proc RunScheduler) (return Nothing)
+                            (_,_,_,_,schd)<-get
+                            if' (typ schd == preemptive) (proc RunScheduler) (return Nothing)
                             (run , readyQ , waitingQ,tick' ,schedule ) <- get 
                             let tick = tick'+1
                             let (readyQueue,waitingQueue) = updateWaiting readyQ waitingQ
@@ -142,19 +150,18 @@ proc (RunMachine) = do                                                --Runs for
                                                    else do 
                                                           let (process,readyQ') = findProcess schedule readyQueue tick
                                                           put $ (process , readyQ' ,waitingQueue, tick , schedule)
-                                                          return.Just $ ProcessStat { sId = pid running  ,sResponse = returnResponse (response running) (arrival running) tick',sBurst = sumBurst running,sTurnaroundTime = tick - (arrival running), sTick = tick ,sIOBurst = sumIOBurst running,sArrival = arrival running}
+                                                          return.Just $ ProcessStat { sId = pid running  ,sResponse = returnResponse (response running) (arrival running) tick',sBurst = sumBurst running,sTurnaroundTime = tick - (arrival running), sTick = tick ,sIOBurst = sumIOBurst running,sArrival = arrival running,sPriority = priority running}
                               else do 
-                                     put $ (run ,readyQueue,waitingQueue,tick,schedule)
+                                     let (process,readyQ') = findProcess schedule readyQueue tick
+                                     put $ (process , readyQ' ,waitingQueue, tick , schedule)
                                      return Nothing
-                                     --_ <- (proc RunScheduler)
-                                     --(_,_,w,_,_) <- get 
-                                     --if' (w /= []) (proc RunMachine) (return Nothing)
 
---procs :: [Process] -> State Machine [ProcessStat]
--- Num procs = 5 with no . of  cpu bursts = 50  
 instance Show (State Machine (Maybe ProcessStat)) where 
     show s = "State Machine (Maybe ProcessStat)"
+
 procs xs = squence $ cprocs xs
+
+cprocs ::  [Process] -> [State Machine (Maybe ProcessStat)]
 cprocs xs = process            
                 where readyProcesses = map (\s -> proc (Ready s)) xs
                       initList = map (\s -> arrival s) xs
@@ -164,10 +171,11 @@ cprocs xs = process
                       createProcessList [] [] = []
                       createProcessList (x:xs) (y:ys) = [x] ++ replicate y (proc (RunMachine)) ++ createProcessList xs ys 
                       process = (createProcessList readyProcesses intersperseList) 
+
+squence ::  (Functor f, Monad f) => [f (Maybe a)] -> f [a]
 squence xs = catMaybes <$> sequence xs
---squence = foldr mcons (return [])
---  where
---    mcons p q = p >>= \x -> q >>= \y -> if' (isNothing x) (return y) (return (x : y))
+
+processList ::  [Time] -> [[Time]] -> [[Time]] -> [Int] -> [Process]
 processList = zipWith5 f [1..] 
                 where f count arr bur ioB p = Process { pid = count, arrival = arr , burst = bur, sumBurst = sum bur , ioBurst = ioB ,  priority = p , response = -1 , sumIOBurst = sum ioB , allotedBurst = 0 , overAllBurst =0}
 
@@ -196,8 +204,8 @@ ps f = (Just l, head $ burst l)
                   highestPriorityTuple = foldl1 max $ map (processtuple priority) f
 --prog :: [Process] -> [Maybe ProcessStat]
 
-prog preemptive scheduler stmts = fst $ runState (procs stmts) (Nothing,[],[],0,sch)
-                where sch = Schedule {typ = preemptive ,
+prog p scheduler stmts = fst $ runState (procs stmts) (Nothing,[],[],0,sch)
+                where sch = Schedule {typ = p ,
                                     scheduler = scheduler}
 
 scheduler_list = [(fcfs,"fcfs"), (sjf,"sjf") , (rr,"rr"), (ps,"ps")]
@@ -207,19 +215,41 @@ scheduler_list = [(fcfs,"fcfs"), (sjf,"sjf") , (rr,"rr"), (ps,"ps")]
 {-burL :: [[Int]]-}
 {-ioL :: [[Int]]-}
 {-pL :: [Int]-}
-{-initL = [0,10,20,25]-}
-{-burL = [[5],[10],[15],[10]]-}
-{-ioL = [[],[],[],[]]-}
-{-pL = [2,4,1,6]-}
+{-initL = [0,10]-}
+{-burL = [[1,50],[20]]-}
+{-ioL = [[1],[]]-}
+{-pL = [2,7]-}
+
 f :: Show a => [a] -> String
 f = unlines.map show 
-simulator preemptive scheduler scheduler_name stmts = do 
-                    let p = prog preemptive scheduler stmts
-                    let prefix = show preemptive ++ "_" ++ scheduler_name
+
+g :: (Show b) => [(a,b)] -> String
+g = unlines.map (\(a,b)->show b)
+
+prF ::  (Ord a1, Num a, Num a1) => a1 -> a
+prF a | a<5 = 1
+      | a<9 = 2
+      | otherwise = 3
+
+fn ::  [(Int, Time)] -> [(Integer, Double)]
+fn = map (\(a,b)->(a,avg b)) . Map.toList . Map.fromListWith (++) . map (\(a,b)->(prF a,[b])) 
+
+avg ::  Num a => [a] -> Double
+avg ls = (read (show $ sum ls) :: Double)/(fromIntegral $ length ls) 
+
+priorityList = map (\f -> (f,[])) [0..9]
+simulator prt scheduler scheduler_name stmts = do 
+                    let p = prog prt scheduler stmts
+                    let prefix = show prt ++ "_" ++ scheduler_name
                     let respList = map (\s -> sResponse s) p
-                    let avg ls = (read (show $ sum ls) :: Double)/(fromIntegral $ length ls) 
+                    let p_respList =fn $ map (\s -> (sPriority s,sResponse s)) p
+                    let p_turnaroundList = fn $ map (\s -> (sPriority s,sTurnaroundTime s)) p 
+                    let p_waitingList = fn $ map (\s -> (sPriority s,(sTurnaroundTime s) - (sBurst s) -(sIOBurst s))) p
                     let turnaroundList =  map (\s -> sTurnaroundTime s) p 
                     let waitingList =  map (\s -> (sTurnaroundTime s) - (sBurst s) -(sIOBurst s)) p
+                    writeFile (prefix ++ "_presponse.txt") (g p_respList)
+                    writeFile (prefix ++ "_pturnaround.txt") (g p_turnaroundList)
+                    writeFile (prefix ++ "_pwaiting.txt") (g p_waitingList)
                     writeFile (prefix ++ "_response.txt") (f respList)
                     writeFile (prefix ++ "_turnaround.txt") (f turnaroundList)
                     writeFile (prefix ++ "_waiting.txt") (f waitingList)
@@ -234,7 +264,7 @@ simulator preemptive scheduler scheduler_name stmts = do
 {-pr = (head pList) {pid = 5 ,ioBurst = [1]}-}
 
 -- pList = processList initL burL pL
-grandSimulator preemptive stmts = foldl1 (>>) $ map (\(p,s) -> simulator preemptive p s stmts) scheduler_list
+grandSimulator prt stmts = foldl1 (>>) $ map (\(p,s) -> simulator prt p s stmts) scheduler_list
 main = do
         initL <- getInteger "arrival_times.txt"
         burL <- getBursts "cpu_bursts.txt"
