@@ -30,11 +30,12 @@ The Simulation part of the assignment was written in \textbf{Haskell} (pure func
 \item The Alloted burst time is same as the next CPU burst for all the schedulers except round robin.
 \item The time quanta taken for round robin in 6 by default. It can be varied on users choice.
 \item The parameters to generate the initial data are varied like heavy CPU bound processes or IO bound processes .
-\item A assumption is made that the process starts with a CPU burst and ends with a CPU burst . So the number of CPU bursts is one more than the number of IO bursts.
+\item An assumption is made that the process starts with a CPU burst and ends with a CPU burst . So the number of CPU bursts is one more than the number of IO bursts.
 \end{itemize}
 We have written a python script to generate the distributions for inter arrival times , priority , IO and CPU bursts
 \begin{itemize}
-\item \textbf{Pankaj Report here the number of processes , poisson and exponential parameters and etc You have used.Write a make file if time permits}
+\item The most popular and fast python library called NumPy was used to generate these  distributions.
+\item The value of $\lambda$ for exponential and poisson distributions is taken to be 10. IO Bursts are taken from uniform distribution in the range 0 to 9. Besides, the uniform distribution for generating priorities is from the range 0 to 9. Number of processes is N = 20. Number of cpu bursts is 500 and io burst is 499. 
 \end{itemize}
 We have drawn charts also using the \textbf{haskell chart library} .
 We have shown the Bar graph comparison of average response , turnaround and waiting times for all the standard algorithms.To run use the following steps .
@@ -66,4 +67,18 @@ Then we have shown the comparison of average response .waiting and turnaround ti
 \caption{{\it Average waiting time}}  
 \label{surf}
 \end{figure}
+
+\section*{NACH OS}
+
+\begin{itemize}
+\item Our system can run upto 16 threads at the same time without crashing.Thereafter the behaviour is erratic as documented in the source code. 
+\item The kernel is made preemptive by using timer interrupts every 100 ticks. Every 100 ticks , Alarm::CallBack(), our timer interrupt handler is called.
+\item The main thread must have a response time of 0. There after the minimum response time is 10 ms due to context switching. Process with priority 9 is guaranteed to have a response time of 10 ms.
+\item Our implementation consists of multi level queues , highQueue for priority 9 process , midQueue for process between priority 5 and 8 , and the lower priority processes are put in lowQueue.
+\item Excluding the time spent in servicing priority 9 processes , the cpu spends 80 percent time in mid queue and 20 percent time in low queue.
+\item This and rr scheduling guarantees that mid queue processes will have a finite response time.
+\item The idea of cpu time division between mid and low queues makes the scheduler realistic and saves the low priority processes from starvation.
+
+\end{itemize}
+ 
 \end{document}
