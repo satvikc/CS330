@@ -169,6 +169,7 @@ Interrupt::OneTick()
     if (yieldOnReturn) {	// if the timer device handler asked 
     				// for a context switch, ok to do it now
 	yieldOnReturn = FALSE;
+    DEBUG(dbgThread, "Yeild Returned");
  	status = SystemMode;		// yield is a kernel routine
 	kernel->currentThread->Yield();
 	status = oldStatus;

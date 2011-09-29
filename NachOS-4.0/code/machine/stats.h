@@ -60,6 +60,8 @@ const int TimerTicks = 	 100;  	// (average) time between timer interrupts
 //enum ProcStatus {JUST_CREATED, RUNNING, READY, BLOCKED}; 
 typedef struct { 
     char* name;               // name of the program 
+    int *pid;
+    int *priority;
     ThreadStatus* status;        // current status of the process 
 } ProcInfo;
 

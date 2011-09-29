@@ -12,7 +12,7 @@ main()
 {
   int result;
   Add(2,1);
-  //Sleep(300);
+  Sleep(300);
   Add(2,2);
   //Sleep(300);
   Add(2,3);

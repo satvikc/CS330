@@ -28,6 +28,7 @@
 #include "interrupt.h"
 #include "thread.h"
 #include "alarm.h"
+#include <boost/lexical_cast.hpp>
 
 #define MAX_FILE_NAME  10
 
@@ -61,7 +62,7 @@ void Add_Syscall()
 {
     int result;
     result = SysAdd(/* int op1 */(int)kernel->machine->ReadRegister(4),(int)kernel->machine->ReadRegister(5));
-    DEBUG(dbgSys, "Add returning from " << kernel->currentThread->getName() << kernel->currentThread->space->id << "with " << result << "\n");
+    DEBUG(dbgSys, "Add returning from " << kernel->currentThread->getName() << kernel->currentThread->pid << "with " << result << "\n");
     //kernel->stats->Print();
     kernel->machine->WriteRegister(2, (int)result);
 }
@@ -72,7 +73,7 @@ char* setStatus(int x)
     else if (x == 1) return "RUNNING";
     else if (x == 2 ) return "READY";
     else if (x == 3 ) return "BLOCKED";
-    else return "UNKNOWN STATUS";
+    else return "KILLED";
 }
 
 void SysStatsCall()
@@ -81,7 +82,10 @@ void SysStatsCall()
     cout<< "\n";
     cout << "NumProcs : " << kernel->mysysinfo->numprocs << "\n";
     for (int i = 0; i < kernel->mysysinfo->numprocs ; i++)
-        cout<< kernel->mysysinfo->proc[i]->name<<" " <<i << " :" << setStatus(*(kernel->mysysinfo->proc[i]->status)) << "\n";
+    {
+        cout<< kernel->mysysinfo->proc[i]->name<<", PID : "<<*(kernel->mysysinfo->proc[i]->pid)<<", PRIORITY : "<<*(kernel->mysysinfo->proc[i]->priority)<<", STATUS : " << setStatus(*(kernel->mysysinfo->proc[i]->status)) << "\n";
+        ASSERT(*(kernel->mysysinfo->proc[i]->status) <= 3)
+    }
     cout << "Total Ticks : " << *(kernel->mysysinfo->totalticks) <<"\n";
     cout << "Idle Ticks : " << *(kernel->mysysinfo->idleticks) << "\n" ;
     cout << "System Ticks : " << *(kernel->mysysinfo->systemticks) << "\n";
@@ -132,7 +136,7 @@ void ExceptionHandler(ExceptionType which)
         switch(type)
         {
             case SC_Fork:
-                                DEBUG(dbgSys, "This is a Fork system call by - "<< kernel->currentThread->getName() << kernel->currentThread->space->id << "with priority" << kernel->currentThread->priority << "\n");
+                                DEBUG(dbgSys, "This is a Fork system call by - "<< kernel->currentThread->getName() << kernel->currentThread->pid << "with priority" << kernel->currentThread->priority << "\n");
 
                 Thread * newthread1;
                 newthread1=new Thread("child");
@@ -326,12 +330,12 @@ void ExceptionHandler(ExceptionType which)
                 ASSERTNOTREACHED();
                break;
             case SC_Sleep:
-               DEBUG(dbgSys,"Sleep System Call by thread : "<< kernel->currentThread->name << "and pid : " << kernel->currentThread->space->id );
+               DEBUG(dbgSys,"Sleep System Call by thread : "<< kernel->currentThread->name << "and pid : " << kernel->currentThread->pid );
                int memaddress1;
                memaddress1=kernel->machine->ReadRegister(4);
-               a = new Alarm(false);
+               //a = new Alarm(false);
                DEBUG(dbgSys, "Going to WaitUntil "<< memaddress1 << endl); 
-               a->WaitUntil(memaddress1);
+               kernel->alarm->WaitUntil(memaddress1);
                //free(buffer);
 //               kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(NextPCReg));
                    /* set previous programm counter (debugging only)*/
@@ -357,9 +361,9 @@ void ExceptionHandler(ExceptionType which)
 //                    SysHalt();
 //               }
 
-               DEBUG(dbgSys,"Current Thread in SC_Exit : "<< kernel->currentThread->name << "and pid i: " << kernel->currentThread->space->id );
+               DEBUG(dbgSys,"Current Thread in SC_Exit : "<< kernel->currentThread->name << "and pid : " << kernel->currentThread->pid );
 
-
+                SysStatsCall();
 //             oldLevel2 = kernel->interrupt->SetLevel(IntOff);
 //                DEBUG(dbgSys, "Running next thread . ");
                 //if (kernel->currentThread->space->id ==0)

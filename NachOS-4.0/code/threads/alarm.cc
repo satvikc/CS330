@@ -58,27 +58,13 @@ Alarm::CallBack()
             //// turn off the timer
         //DEBUG(dbgThread, "AnyFutureInterrupts");
             //timer->Disable();
-        //}
-    //} 
-        //interrupt->PrintPending();
-        //interrupt->DumpState();
+        //}   //}
+    //else
+    //{
         // there's someone to preempt
-		interrupt->YieldOnReturn();
-		
-		if(!m_qWaitingThreads.empty())
-		{
-			DEBUG(dbgThread, "[Alarm::CallBack()] Checking to wake the thread: " << m_qWaitingThreads.top().th->getName());
-			if(kernel->stats->totalTicks > m_qWaitingThreads.top().wake)
-			{
-				DEBUG(dbgThread, "[Alarm::CallBack()] Waking up: " << m_qWaitingThreads.top().th->getName());
-				kernel->scheduler->ReadyToRun(m_qWaitingThreads.top().th);
-				m_qWaitingThreads.pop();
-				nr1--;
-			}
-		}
-
-
-        if (!kernel->scheduler->highQueue->IsEmpty() )
+        //DEBUG(dbgThread, "Timer Interrupt");
+        interrupt->YieldOnReturn();
+		if (!kernel->scheduler->highQueue->IsEmpty() )
             kernel->scheduler->readyList = kernel->scheduler->highQueue;
         else if (!kernel->scheduler->midQueue->IsEmpty() && sclera_counter < 800)
         { 
@@ -95,6 +81,21 @@ Alarm::CallBack()
             sclera_counter = 0;
             kernel->scheduler->readyList = kernel->scheduler->highQueue;
         }
+
+		if(!m_qWaitingThreads.empty())
+		{
+			DEBUG(dbgThread, "[Alarm::CallBack()] Checking to wake the thread: " << m_qWaitingThreads.top().th->getName());
+			if(kernel->stats->totalTicks > m_qWaitingThreads.top().wake)
+			{
+				DEBUG(dbgThread, "[Alarm::CallBack()] Waking up: " << m_qWaitingThreads.top().th->getName());
+				kernel->scheduler->ReadyToRun(m_qWaitingThreads.top().th);
+				m_qWaitingThreads.pop();
+				nr1--;
+			}
+		}
+
+    //}
+        
         //kernel->scheduler->Print();
         
 

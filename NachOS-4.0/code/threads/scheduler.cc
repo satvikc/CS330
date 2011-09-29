@@ -97,23 +97,32 @@ Scheduler::FindNextToRun ()
 
 
     //HUGE PROBLEM IN THIS SECTION
-    if (!highQueue->IsEmpty() || kernel->currentThread->priority == 9)
+    if (!highQueue->IsEmpty() )
     {
         readyList = highQueue;
-        //DEBUG(dbgThread,"Ready List is midQueue");
+        DEBUG(dbgThread,"Ready List is midQueue");
     }
-    else if (!midQueue->IsEmpty() )
+    else if (!midQueue->IsEmpty() && kernel->alarm->sclera_counter < 800)
     {
+        kernel->alarm->sclera_counter += 100;
         readyList = midQueue;
-        //DEBUG(dbgThread,"Ready List is lowQueue");
+        DEBUG(dbgThread,"Ready List is lowQueue");
     }
-    else if (!lowQueue->IsEmpty())
+    else if (!lowQueue->IsEmpty() &&  kernel->alarm->sclera_counter < 1000)
     {
+        kernel->alarm->sclera_counter += 100;
         readyList = lowQueue;
-        //DEBUG(dbgThread,"Ready List is highQueue");
+        DEBUG(dbgThread,"Ready List is highQueue");
+    }
+    else if (kernel->alarm->sclera_counter >=1000)
+    {
+        DEBUG(dbgThread, "SCLERA COUNTER RESET TO ZERO");
+        kernel->alarm->sclera_counter = 0;
+        readyList = midQueue;
     }
     else
     {
+
         return NULL;
     }
 

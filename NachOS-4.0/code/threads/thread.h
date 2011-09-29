@@ -102,9 +102,10 @@ class Thread {
     void setStatus(ThreadStatus st);
     void getStatus() { cout<< status; }
     char* getName() { return (name); }
-    void Print() { cout << name; }
+    void Print() { cout << name <<":" <<pid << " "; }
     void SelfTest();		// test whether thread impl is working
     char* name;
+    int pid;
   private:
     // some of the private data for this class is listed above
     ThreadStatus status;	// ready, running or blocked
@@ -130,6 +131,7 @@ class Thread {
     int response_time;
     int arrival_time;
     int burst_time;
+    int io_time;
     int waiting_time;
     int count;
     int turnaround_time;
