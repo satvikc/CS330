@@ -22,10 +22,15 @@
 #include "synch.h"
 #include "sysdep.h"
 #include "kernel.h"
+#include "debug.h"
+#include <string>
+#include <fstream>
+#include <boost/lexical_cast.hpp>
 
+using namespace std;
 // this is put at the top of the execution stack, for detecting stack overflows
 const int STACK_FENCEPOST = 0xdedbeef;
-
+int pid_counter = 0;
 //----------------------------------------------------------------------
 // Thread::Thread
 // 	Initialize a thread control block, so that we can then call
@@ -36,24 +41,42 @@ const int STACK_FENCEPOST = 0xdedbeef;
 
 Thread::Thread(char* threadName)
 {
-    name = threadName;
+    pid = pid_counter;
+    pid_counter++;
+    name = threadName;// + boost::lexical_cast<std::string>(2);
     stackTop = NULL;
     stack = NULL;
+
     status = JUST_CREATED;
+    arrival_time = kernel->stats->totalTicks;
+
     for (int i = 0; i < MachineStateSize; i++) {
 	machineState[i] = NULL;		// not strictly necessary, since
 					// new thread ignores contents 
 					// of machine registers
     }
     space = NULL;
-    priority = rand() % 10;
+    if (strcmp(name,"main") ==0 || strcmp(name,"postal worker") ==0)
+        priority = -1 ;
+    else
+        priority = rand() % 10;
+    response_time = -1;
+    //arrival_time = -1;
+    burst_time = 0;
+    count = 0;
+    io_time = 0;
+    turnaround_time = -1;
+    first_response_flag = false;
     int index;
     index = kernel->mysysinfo->numprocs;
     kernel->mysysinfo->proc[index] = new ProcInfo();
     kernel->mysysinfo->proc[index]->name = this->name;
+    kernel->mysysinfo->proc[index]->pid = &this->pid;
+    kernel->mysysinfo->proc[index]->priority = &this->priority;
     kernel->mysysinfo->proc[index]->status = &this->status;
     kernel->mysysinfo->numprocs += 1;
 
+    DEBUG(dbgThread, "Thread created : name - " << name << ", status - " << status << ", priority - " <<priority << endl);
 }
 
 //----------------------------------------------------------------------
@@ -71,7 +94,7 @@ Thread::Thread(char* threadName)
 Thread::~Thread()
 {
     DEBUG(dbgThread, "Deleting thread: " << name);
-
+    //ASSERTNOTREACHED();
     ASSERT(this != kernel->currentThread);
     if (stack != NULL)
 	DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
@@ -98,12 +121,49 @@ Thread::~Thread()
 //----------------------------------------------------------------------
 void Thread::setStatus(ThreadStatus st)
 {
+    //DEBUG(dbgThread,"Change status from : "<<status<<" to : "<<st<<endl);
+    //DEBUG(dbgThread,"TotalTics = "<<kernel->stats->totalTicks);
+    if ( st == 1 && !first_response_flag) 
+    {
+        response_time = kernel->stats->totalTicks - arrival_time;
+    }
+    if (st == 1) first_response_flag = true;
+    if (st== 1) //Any to Running
+    {   
+        burst_time -= kernel->stats->totalTicks;
+    }
+    if (status ==  1 )
+    {
+        burst_time += kernel->stats->totalTicks;
+        
+    }
+    if (st == 2)
+    {
+        count -= 1;
+        waiting_time -= kernel->stats->totalTicks;
+    }
+    if( status == 2)
+    {
+        count += 1;
+        waiting_time += kernel->stats->totalTicks;
+    }
+
+    if (st==3)
+    {
+        io_time -= kernel->stats->totalTicks;
+    }
+    if (status == 3)
+    {
+
+        io_time += kernel->stats->totalTicks;
+    }
     status = st;
+
     //if (name == "main") 
     //    return ;
     //else {
     //    kernel->mysysinfo->numprocs += 1;
-    //}
+    //
 }
 void 
 Thread::Fork(VoidFunctionPtr func, void *arg)
@@ -225,15 +285,20 @@ Thread::Yield ()
     ASSERT(this == kernel->currentThread);
     
     DEBUG(dbgThread, "Yielding thread: " << name);
-    
-    nextThread = kernel->scheduler->FindNextToRun();
-    if (nextThread != NULL) {
-	kernel->scheduler->ReadyToRun(this);
-	kernel->scheduler->Run(nextThread, FALSE);
+    if (priority == 9)
+    {
+        DEBUG(dbgThread, "Priority 9 process ... DONT YIELD");
+    }
+    else
+    {
+        nextThread = kernel->scheduler->FindNextToRun();
+        if (nextThread != NULL) {
+            kernel->scheduler->ReadyToRun(this);
+            kernel->scheduler->Run(nextThread, FALSE);
+        }
     }
     (void) kernel->interrupt->SetLevel(oldLevel);
 }
-
 //----------------------------------------------------------------------
 // Thread::Sleep
 // 	Relinquish the CPU, because the current thread has either
@@ -263,9 +328,21 @@ Thread::Sleep (bool finishing)
     ASSERT(kernel->interrupt->getLevel() == IntOff);
     
     DEBUG(dbgThread, "Sleeping thread: " << name);
-
-    status = BLOCKED;
-    while ((nextThread = kernel->scheduler->FindNextToRun()) == NULL)
+    
+    this->setStatus(BLOCKED);
+    if (finishing)
+    {  
+        //io_time += kernel->stats->totalTicks;
+        turnaround_time = kernel->stats->totalTicks - arrival_time;
+        //waiting_time = turnaround_time - io_time - burst_time;
+        this->PrintStats(); 
+    }
+    else
+    {
+        io_time += kernel->stats->totalTicks;
+    }
+    //status = BLOCKED;
+   while ((nextThread = kernel->scheduler->FindNextToRun()) == NULL)
 	kernel->interrupt->Idle();	// no one to run, wait for an interrupt
     
     // returns when it's time for us to run
@@ -451,4 +528,45 @@ Thread::SelfTest()
     kernel->currentThread->Yield();
     SimpleThread(0);
 }
-
+int
+ComparePriority(Thread *x, Thread *y)
+{
+    if (x->priority < y->priority)
+        return 1;
+    else if (x->priority  == y->priority)
+        return 0;
+    else
+        return -1;
+}
+void Thread::PrintStats()
+{
+    this->WriteStats();
+    cout<<"Thread Name : "<<name;
+    cout<<"\nPID : "<<this->pid;
+    cout<<"\nPriority : "<<priority;
+    cout<<"\nBurst Time : "<<burst_time;
+//    cout<<"\nIO Time : "<<io_time;
+    cout<<"\nCounter : "<<count;
+    cout<<"\nArrival Time : "<<arrival_time;
+    cout<<"\nResponse Time : "<<response_time;
+    cout<<"\nWaiting Time : "<<waiting_time;
+    cout<<"\nTurnaround Time : "<<turnaround_time<<endl;
+    
+}
+void Thread::WriteStats()
+{
+    ofstream myfile;
+    myfile.open("stats.txt", ios::app);
+    
+    myfile<<"Thread Name : "<<name<<endl;
+    myfile<<"TotalTicks : "<<kernel->stats->totalTicks;
+    myfile<<"\nPID : "<<this->pid;
+    myfile<<"\nPriority : "<<priority;
+    myfile<<"\nBurst Time : "<<burst_time;
+//    myfile<<"\nIO Time : "<<io_time;
+    myfile<<"\nArrival Time : "<<arrival_time;
+    myfile<<"\nResponse Time : "<<response_time;
+    myfile<<"\nWaiting Time : "<<waiting_time;
+    myfile<<"\nTurnaround Time : "<<turnaround_time<<endl<<endl;
+    myfile.close();
+}

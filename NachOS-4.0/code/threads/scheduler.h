@@ -35,8 +35,11 @@ class Scheduler {
     
     // SelfTest for scheduler is implemented in class Thread
     
-  private:
     List<Thread *> *readyList;  // queue of threads that are ready to run,
+    List<Thread *> *highQueue;
+    List<Thread *> *midQueue;
+    List<Thread *> *lowQueue;
+  private:
 				// but not running
     				// by the next thread that runs
 };

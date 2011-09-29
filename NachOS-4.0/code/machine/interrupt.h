@@ -101,6 +101,9 @@ class Interrupt {
     void setStatus(MachineStatus st) { status = st; }
         			// idle, kernel, user
 
+    bool AnyFutureInterrupts() { return !pending->IsEmpty(); }
+    				// are any interrupts scheduled?
+
     void DumpState();		// Print interrupt state
     
 

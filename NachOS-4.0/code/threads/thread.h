@@ -56,13 +56,13 @@
 
 // Size of the thread's private execution stack.
 // WATCH OUT IF THIS ISN'T BIG ENOUGH!!!!!
-const int StackSize = (8 * 4096);	// in words
+const int StackSize = (4 * 4096);	// in words
 
 
 // Thread state
 enum ThreadStatus { JUST_CREATED, RUNNING, READY, BLOCKED };
 
-
+ 
 // The following class defines a "thread control block" -- which
 // represents a single thread of execution.
 //
@@ -98,16 +98,17 @@ class Thread {
     void Begin();		// Startup code for the thread	
     void Finish();  		// The thread is done executing
     
-    ThreadStatus status;	// ready, running or blocked
     void CheckOverflow();   	// Check if thread stack has overflowed
     void setStatus(ThreadStatus st);
     void getStatus() { cout<< status; }
     char* getName() { return (name); }
-    void Print() { cout << name; }
+    void Print() { cout << name <<":" <<pid << " "; }
     void SelfTest();		// test whether thread impl is working
     char* name;
+    int pid;
   private:
     // some of the private data for this class is listed above
+    ThreadStatus status;	// ready, running or blocked
     
     int *stack; 	 	// Bottom of the stack 
 				// NULL if this is the main thread
@@ -127,7 +128,17 @@ class Thread {
     void SaveUserState();		// save user-level register state
     void RestoreUserState();		// restore user-level register state
     int priority;
+    int response_time;
+    int arrival_time;
+    int burst_time;
+    int io_time;
+    int waiting_time;
+    int count;
+    int turnaround_time;
+    bool first_response_flag;
     AddrSpace *space;			// User code this thread is running.
+    void PrintStats();
+    void WriteStats();
 };
 
 // external function, dummy routine whose sole job is to call Thread::Print
@@ -145,5 +156,7 @@ void ThreadRoot();
 // Stop running oldThread and start running newThread
 void SWITCH(Thread *oldThread, Thread *newThread);
 }
+int ComparePriority(Thread *x, Thread *y);
+
 
 #endif // THREAD_H

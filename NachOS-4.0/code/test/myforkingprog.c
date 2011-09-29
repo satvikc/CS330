@@ -13,9 +13,9 @@ int main()
   SysStats();
   result = Add(42, 20);
   pid=Fork();
-  a = Fork();
-  b = Fork();
-  c = Fork();
+//  a = Fork();
+//  b = Fork();
+//  c = Fork();
   //  Exit(24);
 //  SysStats();
 //  if (pid==0)
