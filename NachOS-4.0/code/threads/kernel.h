@@ -24,6 +24,7 @@ class PostOfficeOutput;
 class SynchConsoleInput;
 class SynchConsoleOutput;
 class SynchDisk;
+class Semaphore;
 
 class Kernel {
   public:
@@ -49,6 +50,7 @@ class Kernel {
     Interrupt *interrupt;	// interrupt status
     Statistics *stats;		// performance metrics
     SysInfo *mysysinfo;
+    SortedList<Semaphore *> *semalist;
     Alarm *alarm;		// the software alarm clock    
     Machine *machine;           // the simulated CPU
     SynchConsoleInput *synchConsoleIn;

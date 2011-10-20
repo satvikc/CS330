@@ -194,6 +194,10 @@ void Lock::Acquire()
 //	By convention, only the thread that acquired the lock
 // 	may release it.
 //---------------------------------------------------------------------
+bool Lock::IsHeldByCurrentThread()
+{
+    return lockHolder == kernel->currentThread;
+}
 
 void Lock::Release()
 {
