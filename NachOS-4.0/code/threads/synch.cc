@@ -51,6 +51,14 @@ Semaphore::Semaphore(char* debugName, int initialValue)
     queue = new List<Thread *>;
 }
 
+Semaphore::Semaphore(int debugid)
+{
+    name = "mySemaphore";
+    value = 0;
+    id = debugid;
+    queue = new List<Thread *>;
+}
+
 //----------------------------------------------------------------------
 // Semaphore::Semaphore
 // 	De-allocate semaphore, when no longer needed.  Assume no one

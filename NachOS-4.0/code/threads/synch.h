@@ -40,6 +40,7 @@
 class Semaphore {
   public:
     Semaphore(char* debugName, int initialValue);	// set initial value
+    Semaphore(int debugid);
     ~Semaphore();   					// de-allocate semaphore
     char* getName() { return name;}			// debugging assist
     int id;
