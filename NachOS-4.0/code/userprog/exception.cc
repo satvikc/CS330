@@ -28,7 +28,6 @@
 #include "interrupt.h"
 #include "thread.h"
 #include "alarm.h"
-#include <boost/lexical_cast.hpp>
 
 #define MAX_FILE_NAME  10
 
