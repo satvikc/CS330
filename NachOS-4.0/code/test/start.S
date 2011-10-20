@@ -82,6 +82,39 @@ Exec2:
 	j	$31
 	.end Exec2
 
+    .globl SCreate
+    .ent	SCreate
+SCreate:
+    addiu $2,$0,SC_SCreate
+    syscall
+    j	$31
+    .end SCreate
+
+    .globl SWait
+    .ent	SWait
+SWait:
+    addiu $2,$0,SC_SWait
+    syscall
+    j	$31
+    .end SWait
+
+    .globl SSignal
+    .ent	SSignal
+SSignal:
+    addiu $2,$0,SC_SSignal
+    syscall
+    j	$31
+    .end SSignal
+
+    .globl SDestroy
+    .ent	SDestroy
+SDestroy:
+    addiu $2,$0,SC_SDestroy
+    syscall
+    j	$31
+    .end SDestroy
+
+
 	.globl ExecV
     .ent ExecV
 ExecV:

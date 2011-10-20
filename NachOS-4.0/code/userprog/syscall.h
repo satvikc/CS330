@@ -39,6 +39,12 @@
 #define SC_Add		42
 #define SC_SysStats 99
 #define SC_Sleep    50
+// For semaphores
+#define SC_SCreate 66
+#define SC_SWait 67
+#define SC_SSignal 68
+#define SC_SDestroy 69
+
 #ifndef IN_ASM
 
 /* The system call interface.  These are the operations the Nachos
