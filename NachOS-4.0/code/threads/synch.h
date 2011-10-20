@@ -42,11 +42,11 @@ class Semaphore {
     Semaphore(char* debugName, int initialValue);	// set initial value
     ~Semaphore();   					// de-allocate semaphore
     char* getName() { return name;}			// debugging assist
-    
+    int id;
     void P();	 	// these are the only operations on a semaphore
     void V();	 	// they are both *atomic*
     void SelfTest();	// test routine for semaphore implementation
-    
+       
   private:
     char* name;        // useful for debugging
     int value;         // semaphore value, always >= 0
