@@ -48,6 +48,7 @@ Semaphore::Semaphore(char* debugName, int initialValue)
 {
     name = debugName;
     value = initialValue;
+    valid = 1;
     queue = new List<Thread *>;
 }
 
@@ -55,6 +56,7 @@ Semaphore::Semaphore(int debugid)
 {
     name = "mySemaphore";
     value = 0;
+    valid = 0;
     id = debugid;
     queue = new List<Thread *>;
 }
