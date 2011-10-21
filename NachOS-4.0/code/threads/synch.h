@@ -44,7 +44,7 @@ class Semaphore {
     ~Semaphore();   					// de-allocate semaphore
     char* getName() { return name;}			// debugging assist
     int id;
-    bool valid;
+    int valid;
     void P();	 	// these are the only operations on a semaphore
     void V();	 	// they are both *atomic*
     void SelfTest();	// test routine for semaphore implementation

@@ -19,12 +19,12 @@
 #include "filesys.h"
 #include "machine.h"
 
+class Semaphore;
 class PostOfficeInput;
 class PostOfficeOutput;
 class SynchConsoleInput;
 class SynchConsoleOutput;
 class SynchDisk;
-class Semaphore;
 
 class Kernel {
   public:
