@@ -56,6 +56,7 @@
 //----------------------------------------------------------------------
 
 Alarm *a;
+Semaphore semalist[20];
 
 void Add_Syscall()
 {
@@ -291,16 +292,16 @@ void ExceptionHandler(ExceptionType which)
                     int sid;
                     int retvalue;
                     sid = (int)kernel->machine->ReadRegister(4);
-                    int scount = 0 ;
+                    int scount;
                     for (scount = 0 ; scount <20 ;scount++)
-                    {    if(kernel->semalist[scount]->valid)
+                    {    if(semalist[scount].valid)
                         {
-                            kernel->semalist[scount]->id=sid;
-                            kernel->semalist[scount]->valid=1;
+                            semalist[scount].id=sid;
+                            semalist[scount].valid=1;
                             retvalue=scount;
                             break;
                         }
-                        else if(kernel->semalist[scount]->id==sid)
+                        else if(semalist[scount].id==sid)
                         {
                             retvalue=scount;
                             break;
@@ -323,6 +324,53 @@ void ExceptionHandler(ExceptionType which)
                     ASSERTNOTREACHED();
 
                     break;
+            
+            case SC_SWait:
+                    sid = (int)kernel->machine->ReadRegister(4);
+                    
+                    semalist[sid].P();
+
+                     kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                    /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                    kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                    /* svet next programm counter for brach execution */
+                    kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                    return;
+                    ASSERTNOTREACHED();
+
+                    break;
+
+            case SC_SSignal:
+                    sid = (int)kernel->machine->ReadRegister(4);
+                    
+                    semalist[sid].V();
+
+                     kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                    /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                    kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                    /* svet next programm counter for brach execution */
+                    kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                    return;
+                    ASSERTNOTREACHED();
+
+                    break;
+
+            case SC_SDestroy:
+                    sid = (int)kernel->machine->ReadRegister(4);
+                    
+                    semalist[sid].valid = 0;
+
+                     kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                    /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                    kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                    /* svet next programm counter for brach execution */
+                    kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                    return;
+                    ASSERTNOTREACHED();
+
+                    break;
+
+
 
             case SC_Halt:
                 DEBUG(dbgSys, "Shutdown, initiated by user program.\n");

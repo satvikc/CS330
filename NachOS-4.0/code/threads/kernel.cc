@@ -101,9 +101,9 @@ Kernel::Initialize()
     mysysinfo->systemticks = &stats->systemTicks;
     mysysinfo->userticks = &stats->userTicks;
     mysysinfo->numprocs = 0;
-    int i =0;
-    for (i=0;i<20;++i)
-    semalist[i] = new Semaphore(0);
+    //int i =0;
+    //for (i=0;i<20;++i)
+    //semalist[i] = new Semaphore(0);
 
     // We didn't explicitly allocate the current thread we are running in.
     // But if it ever tries to give up the CPU, we better have a Thread

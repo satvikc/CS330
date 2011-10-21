@@ -18,6 +18,7 @@
 #include "alarm.h"
 #include "filesys.h"
 #include "machine.h"
+#include "synch.h"
 
 class Semaphore;
 class PostOfficeInput;
@@ -50,7 +51,7 @@ class Kernel {
     Interrupt *interrupt;	// interrupt status
     Statistics *stats;		// performance metrics
     SysInfo *mysysinfo;
-    Semaphore *semalist[20];
+    //Semaphore semalist[20];
     Alarm *alarm;		// the software alarm clock    
     Machine *machine;           // the simulated CPU
     SynchConsoleInput *synchConsoleIn;

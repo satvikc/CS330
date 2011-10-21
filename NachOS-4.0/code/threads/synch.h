@@ -39,6 +39,7 @@
 
 class Semaphore {
   public:
+    Semaphore();
     Semaphore(char* debugName, int initialValue);	// set initial value
     Semaphore(int debugid);
     ~Semaphore();   					// de-allocate semaphore

@@ -43,6 +43,15 @@
 //	"debugName" is an arbitrary name, useful for debugging.
 //	"initialValue" is the initial value of the semaphore.
 //----------------------------------------------------------------------
+Semaphore::Semaphore()
+{
+    name = "mySemaphore";
+    value = 0;
+    valid = 0;
+    id = 0;
+    queue = new List<Thread *>;
+
+}
 
 Semaphore::Semaphore(char* debugName, int initialValue)
 {
