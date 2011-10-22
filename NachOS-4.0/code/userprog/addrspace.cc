@@ -98,7 +98,7 @@ AddrSpace::AddrSpace(AddrSpace &space)
 	//	throw(PageLack);
 	//	return;
 	//}
-	pageTable = new TranslationEntry[numPages] ;
+	pageTable = new TranslationEntry[numPages + 1] ;
 
 #ifndef USE_TLB
 	unsigned int i,j;
@@ -123,6 +123,17 @@ AddrSpace::AddrSpace(AddrSpace &space)
         }
 
 	}
+
+    pageTable[numPages].virtualPage = numPages;
+    int k = n.FindAndSet();
+    pageTable[numPages].physicalPage = k;
+    pageTable[numPages].valid = FALSE;
+    pageTable[numPages].use = FALSE;
+    pageTable[numPages].dirty = TRUE;
+    pageTable[numPages].readOnly = FALSE; 
+    this->idsh = pageTable[numPages].physicalPage;
+
+
 
 #endif
 }
@@ -195,7 +206,7 @@ AddrSpace::Load(char *fileName)
 
     DEBUG(dbgAddr, "Initializing address space: " << numPages << ", " << size);
     
-    pageTable = new TranslationEntry[numPages];
+    pageTable = new TranslationEntry[numPages + 1];
     for (int i = 0; i < numPages; i++) {
 	pageTable[i].virtualPage = i;	// for now, virt page # = phys page #
 	int k=n.FindAndSet();
@@ -212,8 +223,15 @@ AddrSpace::Load(char *fileName)
 		kernel->machine->mainMemory[(k)*PageSize+j]=0;
     }
 
-	
-	
+    pageTable[numPages].virtualPage = numPages;
+    int k = n.FindAndSet();
+    pageTable[numPages].physicalPage = k;
+    pageTable[numPages].valid = FALSE;
+    pageTable[numPages].use = FALSE;
+    pageTable[numPages].dirty = TRUE;
+    pageTable[numPages].readOnly = FALSE; 
+    this->idsh = pageTable[numPages].physicalPage;
+
 
 // then, copy in the code and data segments into memory
 // Note: this code assumes that virtual address = physical address

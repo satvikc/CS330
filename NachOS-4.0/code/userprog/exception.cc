@@ -28,7 +28,8 @@
 #include "interrupt.h"
 #include "thread.h"
 #include "alarm.h"
-#include <boost/lexical_cast.hpp>
+//#include <boost/lexical_cast.hpp>
+#include "machine.h"
 
 #define MAX_FILE_NAME  10
 
@@ -57,6 +58,9 @@
 //----------------------------------------------------------------------
 
 Alarm *a;
+int sharedMemory;
+bool share = FALSE;
+int shcount = 0;
 
 void Add_Syscall()
 {
@@ -288,7 +292,86 @@ void ExceptionHandler(ExceptionType which)
 
                 break;
 
+            case SC_shared_memory_open :
+                   DEBUG(dbgSys, "System Call to open shared memory"); 
+                   int sizeMem; 
+                   sizeMem = kernel->machine->ReadRegister(4);
+                   if (sizeMem > PageSize){
+                      DEBUG(dbgSys, "Requested memory for sharing is greater than physical page size. Physical page size is " << PageSize << endl);
+                   }   
+                   else{                                           
+	              if (share == FALSE){
+                      int m;
+                      m = kernel->currentThread->space->numPages;
+	                 sharedMemory = kernel->currentThread->space->idsh;
+	                 DEBUG(dbgSys, "No shared memory still exists.Creating the shared memory. Returning the id of the shared memory" <<endl<< sharedMemory);
+ 	                   kernel->machine->WriteRegister(2,sharedMemory*(m-1));
+ 	                   shcount++;
+ 	                  // kernel->currentThread->space->share = TRUE;
+ 	                   share  = TRUE;
+ 	              }
+ 	              else{
+ 	                 DEBUG(dbgSys, "shared memory exists.adding it to the current process");
+ 	                 int j = kernel->currentThread->space->numPages;
+ 	                 kernel->currentThread->space->pageTable[j].physicalPage = sharedMemory;
+ 	                 kernel->currentThread->space->pageTable[j].valid = TRUE;
+	                 kernel->currentThread->space->pageTable[j].use = FALSE;
+	                 kernel->currentThread->space->pageTable[j].dirty = FALSE;
+	                 kernel->currentThread->space->pageTable[j].readOnly = FALSE;
+	                 DEBUG(dbgSys, "value of shcount " << shcount<<endl);
+	                if(shcount  == 1){
+	                   kernel->machine->WriteMem((j-1)*PageSize, 1 , 10);
+	                   DEBUG(dbgSys,"Writing 10 to the shared memory. Page No is : " << j <<"\t" << sharedMemory<<"\t"<<kernel->currentThread->space->id<<endl);
+	                   shcount++;
+	                 }
+	                 else{
+	                   int p = 0;
+	                   kernel->machine->ReadMem(PageSize*(j-1), 1, &p);
+	                   DEBUG(dbgSys, "Reading from shared memory. Value read is " <<p << j <<"\t" << sharedMemory<<"\t"<<kernel->currentThread->space->id<<endl);
+	                 }
+	                  kernel->machine->WriteRegister(2,sharedMemory*(j-1));
+	                  DEBUG(dbgSys, "Memory ID is "<< sharedMemory<< " and memory length is " <<sizeMem <<endl) ;
+ 	              }
+ 	            }
+ 	            // set previous programm counter (debugging only)
+                kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                   //set programm counter to next instruction (all Instructions are 4 byte wide)
+                kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                   //set next programm counter for brach execution 
+                kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);             
+	          return;
+                  ASSERTNOTREACHED();
 
+                break;
+            case SC_shared_memory_close :
+              DEBUG(dbgSys,"System Call for closing the existing shared memory");    
+                if(share == FALSE){
+                DEBUG(dbgSys, "No memory still shared.");
+                }
+               else{
+                  //ASSERT(kernel->currentThread->space->share == TRUE);
+                  DEBUG(dbgSys, "The Thread named " << kernel->currentThread->getName() << " has shared memory.Deleting memory");
+                    kernel->currentThread->space->share = FALSE;
+                    int j = kernel->currentThread->space->numPages;
+                    kernel->currentThread->space->pageTable[j].valid = FALSE;
+                    kernel->currentThread->space->pageTable[j].use = FALSE;
+                    kernel->currentThread->space->pageTable[j].dirty = TRUE;
+                    kernel->currentThread->space->pageTable[j].readOnly = FALSE;
+                    kernel->currentThread->space->share = FALSE; 
+                   DEBUG(dbgSys, "all shared memory closed")
+                  share  = FALSE;
+                }
+                  // set previous programm counter (debugging only)
+                kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                 //set programm counter to next instruction (all Instructions are 4 byte wide)
+                kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                 //set next programm counter for brach execution 
+                kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                
+                return;
+                ASSERTNOTREACHED();
+                break;
+             
             case SC_Halt:
                 DEBUG(dbgSys, "Shutdown, initiated by user program.\n");
                 SysHalt();

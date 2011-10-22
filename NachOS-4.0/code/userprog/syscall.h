@@ -39,6 +39,9 @@
 #define SC_Add		42
 #define SC_SysStats 99
 #define SC_Sleep    50
+#define SC_shared_memory_open        17
+#define SC_shared_memory_close        18
+
 #ifndef IN_ASM
 
 /* The system call interface.  These are the operations the Nachos
@@ -117,6 +120,11 @@ int Create(char *name);
 
 /* Remove a Nachos file, with name "name" */
 int Remove(char *name);
+
+int  shared_memory_open(int size);   //create a shared memory or add 
+
+void shared_memory_close();          //close the shared memory
+
 
 /* Open the Nachos file "name", and return an "OpenFileId" that can 
  * be used to read and write to the file.

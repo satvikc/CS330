@@ -82,6 +82,23 @@ Exec2:
 	j	$31
 	.end Exec2
 
+    .globl shared_memory_open
+    .ent   shared_memory_open
+shared_memory_open:
+    addiu $2,$0,SC_shared_memory_open
+    syscall
+    j	$31
+    .end shared_memory_open
+
+    .globl shared_memory_close
+    .ent	shared_memory_close
+shared_memory_close:
+    addiu $2,$0,SC_shared_memory_close
+    syscall
+    j	$31
+    .end shared_memory_close
+
+
 	.globl ExecV
     .ent ExecV
 ExecV:

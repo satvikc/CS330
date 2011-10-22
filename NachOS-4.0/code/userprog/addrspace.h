@@ -46,6 +46,8 @@ class AddrSpace {
     TranslationEntry *pageTable;	// Assume linear page table translation
     unsigned int numPages;		// Number of pages in the virtual 
     unsigned int id;
+    unsigned int idsh ;                 //id of  the last page (used for shared memory)
+    bool share;
   private:
 					// for now!
 					// address space
