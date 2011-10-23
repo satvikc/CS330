@@ -289,30 +289,23 @@ void ExceptionHandler(ExceptionType which)
                     break;
 
             case SC_SCreate:
-                    int sid;
-                    int retvalue;
-                    sid = (int)kernel->machine->ReadRegister(4);
+                    int svalue;
+                    svalue = (int)kernel->machine->ReadRegister(4);
                     int scount;
-                    for (scount = 0 ; scount <20 ;scount++)
-                    {    if(semalist[scount].valid)
-                        {
-                            semalist[scount].id=sid;
-                            semalist[scount].valid=1;
-                            retvalue=scount;
+                    for (scount = 0; scount < 20; scount++)
+                    {
+                        if(semalist[scount].valid == 0)
                             break;
-                        }
-                        else if(semalist[scount].id==sid)
-                        {
-                            retvalue=scount;
-                            break;
-                        }
-                        else 
-                        { DEBUG(dbgSys,"No free semaphores left");
-                            retvalue=-1;
-                            SysHalt();
-                        }
                     }
-                    kernel->machine->WriteRegister(2,retvalue);
+                    if (scount > 19)
+                    {
+                        DEBUG(dbgSys,"No free semaphores left");
+                            SysHalt();
+                    }
+                    Semaphore *stemp;
+                    stemp = new Semaphore("semaphore",svalue);
+                    semalist[scount] = *stemp;
+                    kernel->machine->WriteRegister(2,(int)scount);
 
                         
                      kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
@@ -326,7 +319,9 @@ void ExceptionHandler(ExceptionType which)
                     break;
             
             case SC_SWait:
+                    int sid;
                     sid = (int)kernel->machine->ReadRegister(4);
+                    DEBUG(dbgSys, "Semaphore Wait called");
                     
                     semalist[sid].P();
 
@@ -344,6 +339,7 @@ void ExceptionHandler(ExceptionType which)
                     sid = (int)kernel->machine->ReadRegister(4);
                     
                     semalist[sid].V();
+                    DEBUG(dbgSys, "Semaphore signalled");
 
                      kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
                     /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
