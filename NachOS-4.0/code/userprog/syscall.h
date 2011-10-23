@@ -44,6 +44,7 @@
 #define SC_SWait 67
 #define SC_SSignal 68
 #define SC_SDestroy 69
+#define SC_SIncrement 70
 
 #ifndef IN_ASM
 
@@ -66,7 +67,6 @@ void Halt();
  */ 
 
 int Add(int op1, int op2);
-
 /* Address space control operations: Exit, Exec, Execv, and Join */
 
 /* This user program is done (status = 0 means exited normally). */
@@ -81,7 +81,7 @@ typedef int ThreadId;
 /* Run the specified executable, with no args */
 /* This can be implemented as a call to ExecV.
  */ 
-SpaceId Exec(char* exec_name);
+SpaceId Exec(char* exec_name,int op2);
 
 /* Run the executable, stored in the Nachos file "argv[0]", with
  * parameters stored in argv[1..argc-1] and return the 

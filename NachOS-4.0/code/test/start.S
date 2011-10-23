@@ -114,6 +114,15 @@ SDestroy:
     j	$31
     .end SDestroy
 
+    .globl SIncrement
+    .ent	SIncrement
+SIncrement:
+    addiu $2,$0,SC_SIncrement
+    syscall
+    j	$31
+    .end SIncrement
+
+
 
 	.globl ExecV
     .ent ExecV

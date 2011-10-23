@@ -46,11 +46,11 @@ Running 10 processes will not create any problem.
 	p4 = SCreate(1);
 	table = SCreate(4);
 	//Exec("../test/add",9);
-  	Exec("../test/t0");
-  	Exec("../test/t1");
-	Exec("../test/t2");
-	Exec("../test/t3");
-	Exec("../test/t4");
+  	Exec("../test/t0",8);
+  	Exec("../test/t1",8);
+	Exec("../test/t2",8);
+	Exec("../test/t3",8);
+	Exec("../test/t4",8);
 //  	Exec("../test/add",9);
 //   	Exec("../test/add",6);
 //   	Exec("../test/t0",5);
