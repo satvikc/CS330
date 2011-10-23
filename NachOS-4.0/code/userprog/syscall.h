@@ -41,6 +41,9 @@
 #define SC_Sleep    50
 #define SC_shared_memory_open        17
 #define SC_shared_memory_close        18
+#define SC_shared_memory_read        19
+#define SC_shared_memory_write       20
+
 
 #ifndef IN_ASM
 
@@ -124,7 +127,8 @@ int Remove(char *name);
 int  shared_memory_open(int size);   //create a shared memory or add 
 
 void shared_memory_close();          //close the shared memory
-
+int shared_memory_read(int mem, int size);  //reading from shared memory . value of mem is given with respect to one single page.returns next address
+int shared_memory_write(int mem, int size, int val);  //writing to the shared memory. value of men is given with respect to on single page. returns value
 
 /* Open the Nachos file "name", and return an "OpenFileId" that can 
  * be used to read and write to the file.

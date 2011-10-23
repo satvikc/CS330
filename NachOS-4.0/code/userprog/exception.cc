@@ -311,25 +311,16 @@ void ExceptionHandler(ExceptionType which)
  	                   share  = TRUE;
  	              }
  	              else{
- 	                 DEBUG(dbgSys, "shared memory exists.adding it to the current process");
+ 	                 DEBUG(dbgSys, "shared memory exists.adding it to the current process with PID "<<kernel->currentThread->pid <<endl);
  	                 int j = kernel->currentThread->space->numPages;
  	                 kernel->currentThread->space->pageTable[j].physicalPage = sharedMemory;
  	                 kernel->currentThread->space->pageTable[j].valid = TRUE;
 	                 kernel->currentThread->space->pageTable[j].use = FALSE;
 	                 kernel->currentThread->space->pageTable[j].dirty = FALSE;
 	                 kernel->currentThread->space->pageTable[j].readOnly = FALSE;
+	                 kernel->currentThread->space->share = TRUE;
 	                 DEBUG(dbgSys, "value of shcount " << shcount<<endl);
-	                if(shcount  == 1){
-	                   kernel->machine->WriteMem((j-1)*PageSize, 1 , 10);
-	                   DEBUG(dbgSys,"Writing 10 to the shared memory. Page No is : " << j <<"\t" << sharedMemory<<"\t"<<kernel->currentThread->space->id<<endl);
-	                   shcount++;
-	                 }
-	                 else{
-	                   int p = 0;
-	                   kernel->machine->ReadMem(PageSize*(j-1), 1, &p);
-	                   DEBUG(dbgSys, "Reading from shared memory. Value read is " <<p << j <<"\t" << sharedMemory<<"\t"<<kernel->currentThread->space->id<<endl);
-	                 }
-	                  kernel->machine->WriteRegister(2,sharedMemory*(j-1));
+	                 kernel->machine->WriteRegister(2,sharedMemory*(j-1));
 	                  DEBUG(dbgSys, "Memory ID is "<< sharedMemory<< " and memory length is " <<sizeMem <<endl) ;
  	              }
  	            }
@@ -349,9 +340,8 @@ void ExceptionHandler(ExceptionType which)
                 DEBUG(dbgSys, "No memory still shared.");
                 }
                else{
-                  //ASSERT(kernel->currentThread->space->share == TRUE);
-                  DEBUG(dbgSys, "The Thread named " << kernel->currentThread->getName() << " has shared memory.Deleting memory");
-                    kernel->currentThread->space->share = FALSE;
+                  ASSERT(kernel->currentThread->space->share == TRUE);
+                  DEBUG(dbgSys, "The Thread named " << kernel->currentThread->getName() <<" PID "<<kernel->currentThread->pid<< " has shared memory.Deleting memory");
                     int j = kernel->currentThread->space->numPages;
                     kernel->currentThread->space->pageTable[j].valid = FALSE;
                     kernel->currentThread->space->pageTable[j].use = FALSE;
@@ -371,6 +361,46 @@ void ExceptionHandler(ExceptionType which)
                 return;
                 ASSERTNOTREACHED();
                 break;
+ 
+            case SC_shared_memory_write :
+               DEBUG(dbgSys, "Writing to shared memory.");
+               int val, valSize,j, mem;
+                val  = kernel->machine->ReadRegister(6);
+                valSize = kernel->machine->ReadRegister(5);
+                mem = kernel->machine->ReadRegister(4);
+                j = kernel->currentThread->space->numPages;
+                kernel->machine->WriteMem((j-1)*PageSize+mem, valSize , val);
+                kernel->machine->WriteRegister(2,mem+valSize);
+                DEBUG(dbgSys, "Value "<< val<<" of size "<<valSize<<" Writtten at memory " <<mem <<endl);
+               // set previous programm counter (debugging only)
+                kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                 //set programm counter to next instruction (all Instructions are 4 byte wide)
+                kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                 //set next programm counter for brach execution 
+                kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                return;
+                ASSERTNOTREACHED();
+               break; 
+               
+            case SC_shared_memory_read :
+                  DEBUG(dbgSys, "Reading from shared memory.");
+               int valAdd;
+                valSize = kernel->machine->ReadRegister(5);
+                mem = kernel->machine->ReadRegister(4);
+                j = kernel->currentThread->space->numPages;
+                kernel->machine->ReadMem((j-1)*PageSize+mem, valSize , &valAdd);
+                kernel->machine->WriteRegister(2,valAdd);
+                DEBUG(dbgSys, "Value "<< valAdd<<" of size "<<valSize<<" read from the memory " <<mem <<endl);
+               // set previous programm counter (debugging only)
+                kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                 //set programm counter to next instruction (all Instructions are 4 byte wide)
+                kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                 //set next programm counter for brach execution 
+                kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+            
+                return;
+                ASSERTNOTREACHED();
+                break;                
              
             case SC_Halt:
                 DEBUG(dbgSys, "Shutdown, initiated by user program.\n");

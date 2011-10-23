@@ -98,7 +98,22 @@ shared_memory_close:
     j	$31
     .end shared_memory_close
 
+    .globl shared_memory_read
+	.ent	shared_memory_read
+shared_memory_read:
+	addiu $2,$0,SC_shared_memory_read
+	syscall
+	j	$31
+	.end shared_memory_read
 
+    .globl shared_memory_write
+	.ent	shared_memory_write
+shared_memory_write:
+	addiu $2,$0,SC_shared_memory_write
+	syscall
+	j	$31
+	.end shared_memory_write
+ 
 	.globl ExecV
     .ent ExecV
 ExecV:
