@@ -98,13 +98,13 @@ AddrSpace::AddrSpace(AddrSpace &space)
 	//	throw(PageLack);
 	//	return;
 	//}
-	pageTable = new TranslationEntry[numPages + 1] ;
+	pageTable = new TranslationEntry[numPages] ;
 
 #ifndef USE_TLB
 	unsigned int i,j;
     int c;
     int x;
-	for (i = 0; i < numPages; i++) {
+	for (i = 0; i < numPages-1; i++) {
 		pageTable[i].virtualPage = i;
         x = n.FindAndSet();
 		pageTable[i].physicalPage = x;
@@ -124,14 +124,14 @@ AddrSpace::AddrSpace(AddrSpace &space)
 
 	}
 
-    pageTable[numPages].virtualPage = numPages;
+    pageTable[numPages-1].virtualPage = numPages-1;
     int k = n.FindAndSet();
-    pageTable[numPages].physicalPage = k;
-    pageTable[numPages].valid = FALSE;
-    pageTable[numPages].use = FALSE;
-    pageTable[numPages].dirty = TRUE;
-    pageTable[numPages].readOnly = FALSE; 
-    this->idsh = pageTable[numPages].physicalPage;
+    pageTable[numPages-1].physicalPage = k;
+    pageTable[numPages-1].valid = TRUE;
+    pageTable[numPages-1].use = FALSE;
+    pageTable[numPages-1].dirty = TRUE;
+    pageTable[numPages-1].readOnly = FALSE; 
+    this->idsh = pageTable[numPages-1].physicalPage;
 
 
 
@@ -197,6 +197,7 @@ AddrSpace::Load(char *fileName)
 						// to leave room for the stack
 #endif
     numPages = divRoundUp(size, PageSize);
+    numPages += 1;
     size = numPages * PageSize;
 
     ASSERT(numPages <= NumPhysPages);		// check we're not trying
@@ -206,8 +207,8 @@ AddrSpace::Load(char *fileName)
 
     DEBUG(dbgAddr, "Initializing address space: " << numPages << ", " << size);
     
-    pageTable = new TranslationEntry[numPages + 1];
-    for (int i = 0; i < numPages; i++) {
+    pageTable = new TranslationEntry[numPages];
+    for (int i = 0; i < numPages-1; i++) {
 	pageTable[i].virtualPage = i;	// for now, virt page # = phys page #
 	int k=n.FindAndSet();
 	pageTable[i].physicalPage = k;
@@ -222,18 +223,21 @@ AddrSpace::Load(char *fileName)
 	for(int j=0;j < PageSize;j++)
 		kernel->machine->mainMemory[(k)*PageSize+j]=0;
     }
-
-    pageTable[numPages].virtualPage = numPages;
-    int k = n.FindAndSet();
-    pageTable[numPages].physicalPage = k;
-    pageTable[numPages].valid = FALSE;
-    pageTable[numPages].use = FALSE;
-    pageTable[numPages].dirty = TRUE;
-    pageTable[numPages].readOnly = FALSE; 
-    this->idsh = pageTable[numPages].physicalPage;
-
-
-// then, copy in the code and data segments into memory
+ 
+    pageTable[numPages-1].virtualPage = numPages-1;
+	int k = n.FindAndSet();
+	pageTable[numPages-1].physicalPage = k;
+	pageTable[numPages-1].valid = TRUE;
+	pageTable[numPages-1].use = FALSE;
+	pageTable[numPages-1].dirty = TRUE;
+	pageTable[numPages-1].readOnly = FALSE; 
+	DEBUG(dbgSys, "physical page "<< k << " virtual page" << numPages-1 << " for sharing"<<endl);
+	for(int j=0;j < PageSize;j++)
+		kernel->machine->mainMemory[(k)*PageSize+j]=0;
+	this->idsh = pageTable[numPages-1].physicalPage;
+	this->share = FALSE;
+	
+// then, copy in the code and data segments into MemorySize
 // Note: this code assumes that virtual address = physical address
     if (noffH.code.size > 0) {
 		int	j=(pageTable[noffH.code.virtualAddr/PageSize].physicalPage)*PageSize + ((noffH.code.virtualAddr)%PageSize);

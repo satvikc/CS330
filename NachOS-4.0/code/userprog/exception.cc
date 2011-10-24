@@ -313,14 +313,14 @@ void ExceptionHandler(ExceptionType which)
  	              else{
  	                 DEBUG(dbgSys, "shared memory exists.adding it to the current process with PID "<<kernel->currentThread->pid <<endl);
  	                 int j = kernel->currentThread->space->numPages;
- 	                 kernel->currentThread->space->pageTable[j].physicalPage = sharedMemory;
- 	                 kernel->currentThread->space->pageTable[j].valid = TRUE;
-	                 kernel->currentThread->space->pageTable[j].use = FALSE;
-	                 kernel->currentThread->space->pageTable[j].dirty = FALSE;
-	                 kernel->currentThread->space->pageTable[j].readOnly = FALSE;
+ 	                 kernel->currentThread->space->pageTable[j-1].physicalPage = sharedMemory;
+ 	                 kernel->currentThread->space->pageTable[j-1].valid = TRUE;
+	                 kernel->currentThread->space->pageTable[j-1].use = FALSE;
+	                 kernel->currentThread->space->pageTable[j-1].dirty = FALSE;
+	                 kernel->currentThread->space->pageTable[j-1].readOnly = FALSE;
 	                 kernel->currentThread->space->share = TRUE;
 	                 DEBUG(dbgSys, "value of shcount " << shcount<<endl);
-	                 kernel->machine->WriteRegister(2,sharedMemory*(j-1));
+	                 kernel->machine->WriteRegister(2,sharedMemory*(j));
 	                  DEBUG(dbgSys, "Memory ID is "<< sharedMemory<< " and memory length is " <<sizeMem <<endl) ;
  	              }
  	            }
@@ -343,10 +343,10 @@ void ExceptionHandler(ExceptionType which)
                   ASSERT(kernel->currentThread->space->share == TRUE);
                   DEBUG(dbgSys, "The Thread named " << kernel->currentThread->getName() <<" PID "<<kernel->currentThread->pid<< " has shared memory.Deleting memory");
                     int j = kernel->currentThread->space->numPages;
-                    kernel->currentThread->space->pageTable[j].valid = FALSE;
-                    kernel->currentThread->space->pageTable[j].use = FALSE;
-                    kernel->currentThread->space->pageTable[j].dirty = TRUE;
-                    kernel->currentThread->space->pageTable[j].readOnly = FALSE;
+                    kernel->currentThread->space->pageTable[j-1].valid = TRUE;
+                    kernel->currentThread->space->pageTable[j-1].use = FALSE;
+                    kernel->currentThread->space->pageTable[j-1].dirty = TRUE;
+                    kernel->currentThread->space->pageTable[j-1].readOnly = FALSE;
                     kernel->currentThread->space->share = FALSE; 
                    DEBUG(dbgSys, "all shared memory closed")
                   share  = FALSE;
