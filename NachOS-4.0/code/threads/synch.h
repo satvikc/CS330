@@ -39,14 +39,17 @@
 
 class Semaphore {
   public:
+    Semaphore();
     Semaphore(char* debugName, int initialValue);	// set initial value
+    Semaphore(int debugid);
     ~Semaphore();   					// de-allocate semaphore
     char* getName() { return name;}			// debugging assist
-    
+    int id;
+    int valid;
     void P();	 	// these are the only operations on a semaphore
     void V();	 	// they are both *atomic*
     void SelfTest();	// test routine for semaphore implementation
-    
+       
   private:
     char* name;        // useful for debugging
     int value;         // semaphore value, always >= 0
@@ -75,8 +78,8 @@ class Lock {
     void Acquire(); 		// these are the only operations on a lock
     void Release(); 		// they are both *atomic*
 
-    bool IsHeldByCurrentThread() { 
-    		return lockHolder == kernel->currentThread; }
+    bool IsHeldByCurrentThread();  
+    		//return lockHolder == kernel->currentThread; }
     				// return true if the current thread 
 				// holds this lock.
     

@@ -83,7 +83,14 @@ Kernel::Kernel(int argc, char **argv)
 //	constructor because some of these refer to earlier initialized
 //	data via the "kernel" global variable.
 //----------------------------------------------------------------------
-
+static int CompareSemaphore(Semaphore *x, Semaphore *y)
+{
+    if(x->id < y->id)
+        return -1;
+    else if(x->id > y->id)
+        return 1;
+    else return 0;
+}
 void
 Kernel::Initialize()
 {
@@ -94,8 +101,9 @@ Kernel::Initialize()
     mysysinfo->systemticks = &stats->systemTicks;
     mysysinfo->userticks = &stats->userTicks;
     mysysinfo->numprocs = 0;
-
-
+    //int i =0;
+    //for (i=0;i<20;++i)
+    //semalist[i] = new Semaphore(0);
 
     // We didn't explicitly allocate the current thread we are running in.
     // But if it ever tries to give up the CPU, we better have a Thread

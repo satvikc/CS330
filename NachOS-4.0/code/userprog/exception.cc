@@ -28,7 +28,6 @@
 #include "interrupt.h"
 #include "thread.h"
 #include "alarm.h"
-//#include <boost/lexical_cast.hpp>
 #include "machine.h"
 
 #define MAX_FILE_NAME  10
@@ -61,6 +60,8 @@ Alarm *a;
 int sharedMemory;
 bool share = FALSE;
 int shcount = 0;
+Semaphore semalist[20];
+int eatlist[20];
 
 void Add_Syscall()
 {
@@ -96,6 +97,11 @@ void SysStatsCall()
     cout << "User Ticks : " << *(kernel->mysysinfo->userticks) << "\n";
     kernel->scheduler->Print();
     cout<<"SysStatsCall Complete";
+    cout<<"Eatlist : "<<endl;
+    for (int i = 0; i < 20; i++)
+    {
+        cout << eatlist[i] << " ";
+    }
     cout << "\n";
 }
 
@@ -180,12 +186,13 @@ void ExceptionHandler(ExceptionType which)
             case SC_Exec:
                 DEBUG(dbgSys, "This is an Exec system call by - "<< kernel->currentThread->getName() << "\n");
                 char execfile[MAX_FILE_NAME];
-                int memaddress;
+                int memaddress,prior;
                 memaddress=kernel->machine->ReadRegister(4);
+                prior=kernel->machine->ReadRegister(5);
                 readMemory(memaddress,execfile);
                 //func. defined at top of the File
                 Thread * newthread;
-                newthread=new Thread("child");
+                newthread=new Thread("child",prior);
                 newthread->space= new AddrSpace();
                 newthread->space->Load(execfile);
                 //kernel->currentThread->space->Load(execfile);
@@ -290,7 +297,105 @@ void ExceptionHandler(ExceptionType which)
                     return;
                     ASSERTNOTREACHED();
 
-                break;
+                    break;
+
+            case SC_SCreate:
+                    int svalue;
+                    svalue = (int)kernel->machine->ReadRegister(4);
+                    int scount;
+                    for (scount = 0; scount < 20; scount++)
+                    {
+                        if(semalist[scount].valid == 0)
+                            break;
+                    }
+                    if (scount > 19)
+                    {
+                        DEBUG(dbgSys,"No free semaphores left");
+                            SysHalt();
+                    }
+                    Semaphore *stemp;
+                    stemp = new Semaphore("semaphore",svalue);
+                    semalist[scount] = *stemp;
+                    eatlist[scount] = 0;
+                    kernel->machine->WriteRegister(2,(int)scount);
+
+                        
+                     kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                    /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                    kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                    /* svet next programm counter for brach execution */
+                    kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                    return;
+                    ASSERTNOTREACHED();
+
+                    break;
+            
+            case SC_SWait:
+                    int sid;
+                    sid = (int)kernel->machine->ReadRegister(4);
+                    DEBUG(dbgSys, "Semaphore Wait called");
+                    
+                    semalist[sid].P();
+
+                     kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                    /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                    kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                    /* svet next programm counter for brach execution */
+                    kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                    return;
+                    ASSERTNOTREACHED();
+
+                    break;
+
+            case SC_SSignal:
+                    sid = (int)kernel->machine->ReadRegister(4);
+                    
+                    semalist[sid].V();
+                    DEBUG(dbgSys, "Semaphore signalled");
+
+                     kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                    /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                    kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                    /* svet next programm counter for brach execution */
+                    kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                    return;
+                    ASSERTNOTREACHED();
+
+                    break;
+
+            case SC_SDestroy:
+                    sid = (int)kernel->machine->ReadRegister(4);
+                    
+                    semalist[sid].valid = 0;
+
+                    kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                    /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                    kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                    /* svet next programm counter for brach execution */
+                    kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                    return;
+                    ASSERTNOTREACHED();
+
+                    break;
+
+
+            case SC_SIncrement:
+                    sid = (int)kernel->machine->ReadRegister(4);
+                    int i,sum;
+                    sum = 0;
+                    for (i=0;i<20;i++)
+                        sum+=eatlist[i];
+                    if(sum <= 1000)
+                        eatlist[sid]++;
+
+
+                    kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+                    /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+                    kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+                    /* svet next programm counter for brach execution */
+                    kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+                    return;
+                    ASSERTNOTREACHED();
 
             case SC_shared_memory_open :
                    DEBUG(dbgSys, "System Call to open shared memory"); 
@@ -332,6 +437,7 @@ void ExceptionHandler(ExceptionType which)
                 kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);             
 	          return;
                   ASSERTNOTREACHED();
+                    break;
 
                 break;
             case SC_shared_memory_close :

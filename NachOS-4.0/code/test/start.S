@@ -114,6 +114,48 @@ shared_memory_write:
 	j	$31
 	.end shared_memory_write
  
+    .globl SCreate
+    .ent	SCreate
+SCreate:
+    addiu $2,$0,SC_SCreate
+    syscall
+    j	$31
+    .end SCreate
+
+    .globl SWait
+    .ent	SWait
+SWait:
+    addiu $2,$0,SC_SWait
+    syscall
+    j	$31
+    .end SWait
+
+    .globl SSignal
+    .ent	SSignal
+SSignal:
+    addiu $2,$0,SC_SSignal
+    syscall
+    j	$31
+    .end SSignal
+
+    .globl SDestroy
+    .ent	SDestroy
+SDestroy:
+    addiu $2,$0,SC_SDestroy
+    syscall
+    j	$31
+    .end SDestroy
+
+    .globl SIncrement
+    .ent	SIncrement
+SIncrement:
+    addiu $2,$0,SC_SIncrement
+    syscall
+    j	$31
+    .end SIncrement
+
+
+
 	.globl ExecV
     .ent ExecV
 ExecV:

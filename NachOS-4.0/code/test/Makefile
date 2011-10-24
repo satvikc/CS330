@@ -112,7 +112,7 @@ ifeq ($(hosttype),unknown)
 PROGRAMS = unknownhost
 else
 # change this if you create a new test program!
-PROGRAMS = assignment1 otherExec add add2 add3 add4 myforkingprog halt shell matmult sort segments shm_test
+PROGRAMS = assignment1 otherExec add add2 add3 add4 myforkingprog halt t0 t1 t2 t3 t4 shell matmult sort segments shm_test
 endif
 
 all: $(PROGRAMS)
@@ -125,6 +125,32 @@ halt.o: halt.c
 halt: halt.o start.o
 	$(LD) $(LDFLAGS) start.o halt.o -o halt.coff
 	$(COFF2NOFF) halt.coff halt
+t0.o: t0.c
+	$(CC) $(CFLAGS) -c t0.c
+t0: t0.o start.o
+	$(LD) $(LDFLAGS) start.o t0.o -o t0.coff
+	$(COFF2NOFF) t0.coff t0
+t1.o: t1.c
+	$(CC) $(CFLAGS) -c t1.c
+t1: t1.o start.o
+	$(LD) $(LDFLAGS) start.o t1.o -o t1.coff
+	$(COFF2NOFF) t1.coff t1
+t2.o: t2.c
+	$(CC) $(CFLAGS) -c t2.c
+t2: t2.o start.o
+	$(LD) $(LDFLAGS) start.o t2.o -o t2.coff
+	$(COFF2NOFF) t2.coff t2
+t3.o: t3.c
+	$(CC) $(CFLAGS) -c t3.c
+t3: t3.o start.o
+	$(LD) $(LDFLAGS) start.o t3.o -o t3.coff
+	$(COFF2NOFF) t3.coff t3
+t4.o: t4.c
+	$(CC) $(CFLAGS) -c t4.c
+t4: t4.o start.o
+	$(LD) $(LDFLAGS) start.o t4.o -o t4.coff
+	$(COFF2NOFF) t4.coff t4
+
 
 myforkingprog.o: myforkingprog.c
 	$(CC) $(CFLAGS) -c myforkingprog.c

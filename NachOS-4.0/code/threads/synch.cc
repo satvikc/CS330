@@ -43,11 +43,30 @@
 //	"debugName" is an arbitrary name, useful for debugging.
 //	"initialValue" is the initial value of the semaphore.
 //----------------------------------------------------------------------
+Semaphore::Semaphore()
+{
+    name = "mySemaphore";
+    value = 0;
+    valid = 0;
+    id = 0;
+    queue = new List<Thread *>;
+
+}
 
 Semaphore::Semaphore(char* debugName, int initialValue)
 {
     name = debugName;
     value = initialValue;
+    valid = 1;
+    queue = new List<Thread *>;
+}
+
+Semaphore::Semaphore(int debugid)
+{
+    name = "mySemaphore";
+    value = 0;
+    valid = 0;
+    id = debugid;
     queue = new List<Thread *>;
 }
 
@@ -194,6 +213,10 @@ void Lock::Acquire()
 //	By convention, only the thread that acquired the lock
 // 	may release it.
 //---------------------------------------------------------------------
+bool Lock::IsHeldByCurrentThread()
+{
+    return lockHolder == kernel->currentThread;
+}
 
 void Lock::Release()
 {

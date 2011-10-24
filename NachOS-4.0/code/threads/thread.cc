@@ -78,6 +78,46 @@ Thread::Thread(char* threadName)
 
     DEBUG(dbgThread, "Thread created : name - " << name << ", status - " << status << ", priority - " <<priority << endl);
 }
+Thread::Thread(char* threadName,int debugPriority)
+{
+    pid = pid_counter;
+    pid_counter++;
+    name = threadName;// + boost::lexical_cast<std::string>(2);
+    stackTop = NULL;
+    stack = NULL;
+
+    status = JUST_CREATED;
+    arrival_time = kernel->stats->totalTicks;
+
+    for (int i = 0; i < MachineStateSize; i++) {
+	machineState[i] = NULL;		// not strictly necessary, since
+					// new thread ignores contents 
+					// of machine registers
+    }
+    space = NULL;
+    if (strcmp(name,"main") ==0 || strcmp(name,"postal worker") ==0)
+        priority = -1 ;
+    else
+        priority = debugPriority;
+    response_time = -1;
+    //arrival_time = -1;
+    burst_time = 0;
+    count = 0;
+    io_time = 0;
+    turnaround_time = -1;
+    first_response_flag = false;
+    int index;
+    index = kernel->mysysinfo->numprocs;
+    kernel->mysysinfo->proc[index] = new ProcInfo();
+    kernel->mysysinfo->proc[index]->name = this->name;
+    kernel->mysysinfo->proc[index]->pid = &this->pid;
+    kernel->mysysinfo->proc[index]->priority = &this->priority;
+    kernel->mysysinfo->proc[index]->status = &this->status;
+    kernel->mysysinfo->numprocs += 1;
+
+    DEBUG(dbgThread, "Thread created : name - " << name << ", status - " << status << ", priority - " <<priority << endl);
+}
+
 
 //----------------------------------------------------------------------
 // Thread::~Thread
